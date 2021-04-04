@@ -125,3 +125,65 @@ class LstmAttentionModel(nn.Module):
         output = self.spatial_dropout(output)
 
         return self.fc(output)
+
+
+class BaselineSegmentationModel(nn.Module):
+
+    def __init__(self,
+                 char_vocab_size: int,
+                 tag_vocab_size: int,
+                 emb_dim: int,
+                 hidden_size: int,
+                 lstm_layers: int = 1,
+                 layer_dropout: float = 0.,
+                 spatial_dropout: float = 0.,
+                 bidirectional: bool = False,
+                 padding_index: int = 0):
+
+        super(BaselineSegmentationModel, self).__init__()
+
+        self.tag_vocab_size = tag_vocab_size
+        self.padding_index = padding_index
+
+        self.directions = 2 if bidirectional else 1
+
+        self.encoder = LstmEncoder(vocab_size=char_vocab_size,
+                                   emb_dim=emb_dim,
+                                   hidden_size=hidden_size,
+                                   lstm_layers=lstm_layers,
+                                   layer_dropout=layer_dropout,
+                                   spatial_dropout=spatial_dropout,
+                                   bidirectional=bidirectional,
+                                   padding_index=padding_index)
+
+        self.fc = nn.Linear(in_features=hidden_size * self.directions,
+                            out_features=tag_vocab_size)
+
+        self.loss = torch.nn.CrossEntropyLoss(reduction='sum')
+
+    def compute_outputs(self, sequences):
+
+        encoder_seq, memory = self.encoder(sequences)
+        encoder_out = self.fc(encoder_seq)
+
+        pad_mask = (sequences == self.padding_index).float()
+
+        encoder_out[:, :, self.padding_index] += pad_mask*10000
+
+        return encoder_out
+
+    def forward(self, sequences, labels):
+
+        scores = self.compute_outputs(sequences)
+
+        scores = scores.view(-1, self.tag_vocab_size)
+        labels = labels.view(-1)
+
+        return self.loss(scores, labels)
+
+    def predict(self, sentences):
+        scores = self.compute_outputs(sentences)
+
+        predicted = scores.argmax(dim=2)
+
+        return predicted.t().cpu().numpy()

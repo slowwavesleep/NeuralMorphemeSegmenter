@@ -1,0 +1,59 @@
+import json
+import numpy as np
+
+from constants import UNK_INDEX, PAD_INDEX, CONVERTED_LEMMAS_PATHS, MAX_LEN
+from src.utils.tokenizers import SymTokenizer
+from src.utils.datasets import BmesSegmentationDataset
+from src.nn.training_process import train
+from src.nn.layers import LstmEncoder
+from src.nn.models import BaselineSegmentationModel
+
+def read_converted_lemmas(path: str):
+    original = []
+    segmented = []
+    with open(path) as file:
+        for line in file:
+            data = json.loads(line)
+            original.append(data["original"])
+            segmented.append(data["segmented"])
+
+    return original, segmented
+
+
+train_original, train_segmented = read_converted_lemmas(CONVERTED_LEMMAS_PATHS["train"])
+
+test_original, test_segmented = read_converted_lemmas(CONVERTED_LEMMAS_PATHS["test"])
+
+# word_tokenizer = SymTokenizer(pad_index=PAD_INDEX, unk_index=UNK_INDEX).build_vocab(original)
+# bmes_tokenizer = SymTokenizer(pad_index=PAD_INDEX, unk_index=UNK_INDEX, convert_to_bmes=True).build_vocab(segmented)
+#
+# print(word_tokenizer.pad_or_clip(word_tokenizer.encode(original[1]), 15))
+# print(segmented[1])
+# print(bmes_tokenizer.pad_or_clip(bmes_tokenizer.encode(segmented[1]), 15))
+
+train_ds = BmesSegmentationDataset(original=train_original,
+                                   segmented=train_segmented,
+                                   sym_tokenizer=SymTokenizer,
+                                   pad_index=PAD_INDEX,
+                                   unk_index=UNK_INDEX,
+                                   max_len=MAX_LEN)
+
+test_ds = BmesSegmentationDataset(original=test_original,
+                                  segmented=test_segmented,
+                                  sym_tokenizer=SymTokenizer,
+                                  pad_index=PAD_INDEX,
+                                  unk_index=UNK_INDEX,
+                                  max_len=MAX_LEN)
+
+
+enc = BaselineSegmentationModel(char_vocab_size=train_ds.original_tokenizer.vocab_size,
+                                tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
+                                emb_dim=100,
+                                hidden_size=100,
+                                bidirectional=True,
+                                padding_index=PAD_INDEX)
+
+print(train_ds[0][0])
+print(train_ds[0][0].size())
+
+print(enc.forward(train_ds[0][0].unsqueeze(0), train_ds[0][1].unsqueeze(0)))

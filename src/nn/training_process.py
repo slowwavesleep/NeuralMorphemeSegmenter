@@ -22,7 +22,7 @@ def train(model: Module,
 
     model.train()
 
-    for encoder_seq, decoder_seq, target_seq in loader:
+    for encoder_seq, target_seq in loader:
         encoder_seq = encoder_seq.to(device)
         decoder_seq = decoder_seq.to(device)
         target_seq = target_seq.to(device)

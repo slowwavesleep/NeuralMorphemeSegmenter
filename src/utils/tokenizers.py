@@ -1,5 +1,4 @@
-from typing import List, Tuple, Dict, Optional
-import warnings
+from typing import List, Tuple, Dict
 
 
 def _sequence2bmes(segmented_sequence: str, *, sep: str = "|") -> str:
@@ -27,7 +26,6 @@ def _build_sym_index(sequences: List[str],
                      unk_index: int) -> Tuple[Dict[int, str], Dict[str, int]]:
 
     unique_chars = set("".join(sequences))
-    # index2sym = {pad_index: "<PAD>", unk_index: "<UNK>"}
     index2sym = {index: ch for index, ch in enumerate(unique_chars)}
 
     if pad_index in index2sym:
@@ -50,32 +48,25 @@ def _build_sym_index(sequences: List[str],
 class SymTokenizer:
 
     def __init__(self,
+                 *,
                  pad_index: int,
                  unk_index: int,
-                 *,
-                 length: Optional[int] = None):
+                 convert_to_bmes: bool = False):
 
         self.pad_index = pad_index
         self.unk_index = unk_index
 
+        self.convert_to_bmes = convert_to_bmes
+
         self._index2sym = None
         self._sym2index = None
-
-        if length and length < 0:
-            raise ValueError("Sequence length can't be negative!")
-        elif length == 0:
-            warnings.warn("Sequence length set to zero")
-
-        self.length = length
 
         self._vocab_flag = False
 
     def build_vocab(self,
-                    sequences: List[str],
-                    *,
-                    convert_to_bmes: bool = False):
+                    sequences: List[str]):
 
-        if convert_to_bmes:
+        if self.convert_to_bmes:
             sequences = [_sequence2bmes(sequence) for sequence in sequences]
 
         self._index2sym, self._sym2index = _build_sym_index(sequences, self.pad_index, self.unk_index)
@@ -84,16 +75,34 @@ class SymTokenizer:
 
         return self
 
+    @property
+    def vocab_size(self):
+        if not self._vocab_flag:
+            raise RuntimeError("Tokenizer vocabulary has not been initialized!")
+        return len(self._index2sym)
+
     def encode(self, sequence: str):
         if not self._vocab_flag:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
-        if self.length is not None:
-            pads = [self.pad_index] * max(0, self.length - len(sequence))
-        else:
-            pads = []
-        return [self._sym2index.get(element, self.unk_index) for element in sequence][:self.length] + pads
+        if self.convert_to_bmes:
+            sequence = _sequence2bmes(sequence)
+        return [self._sym2index.get(element, self.unk_index) for element in sequence]
 
     def decode(self, sequence: List[int]):
         if not self._vocab_flag:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
         return "".join([self._index2sym.get(element, "<UNK>") for element in sequence])
+
+    def pad_or_clip(self, sequence: List[int], max_len: int, *, pre_pad: bool = False):
+        sequence = sequence[:max_len]
+        num_pads = max(0, max_len - len(sequence))
+        pads = [self.pad_index] * num_pads
+
+        if pads:
+            if pre_pad:
+                sequence = pads + sequence
+            else:
+                sequence = sequence + pads
+            return sequence
+        else:
+            return sequence
