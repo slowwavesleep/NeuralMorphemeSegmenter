@@ -1,12 +1,17 @@
 import json
 import numpy as np
+from torch.utils.data import DataLoader
+import torch
+from tqdm import tqdm
+from transformers import AdamW
 
 from constants import UNK_INDEX, PAD_INDEX, CONVERTED_LEMMAS_PATHS, MAX_LEN
 from src.utils.tokenizers import SymTokenizer
 from src.utils.datasets import BmesSegmentationDataset
-from src.nn.training_process import train
+from src.nn.training_process import train, evaluate, training_cycle
 from src.nn.layers import LstmEncoder
-from src.nn.models import BaselineSegmentationModel
+from src.nn.models import LstmTagger
+
 
 def read_converted_lemmas(path: str):
     original = []
@@ -46,14 +51,27 @@ test_ds = BmesSegmentationDataset(original=test_original,
                                   max_len=MAX_LEN)
 
 
-enc = BaselineSegmentationModel(char_vocab_size=train_ds.original_tokenizer.vocab_size,
-                                tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
-                                emb_dim=100,
-                                hidden_size=100,
-                                bidirectional=True,
-                                padding_index=PAD_INDEX)
+enc = LstmTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
+                 tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
+                 emb_dim=256,
+                 hidden_size=256,
+                 bidirectional=True,
+                 padding_index=PAD_INDEX)
 
-print(train_ds[0][0])
-print(train_ds[0][0].size())
+# print(train_ds[0][0])
+# print(train_ds[0][0].size())
+#
+# print(enc.forward(train_ds[0][0].unsqueeze(0), train_ds[0][1].unsqueeze(0)))
 
-print(enc.forward(train_ds[0][0].unsqueeze(0), train_ds[0][1].unsqueeze(0)))
+train_loader = DataLoader(train_ds, batch_size=1024, shuffle=True)
+valid_loader = DataLoader(test_ds, batch_size=1024)
+
+optimizer = torch.optim.Adam(params=enc.parameters())
+
+device = torch.device('cuda')
+
+enc.to(device)
+
+# print(train_ds.bmes_tokenizer._index2sym)
+
+training_cycle(enc, train_loader, valid_loader, optimizer, device, 10., 5)

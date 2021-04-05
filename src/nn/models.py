@@ -11,7 +11,6 @@ def scaled_dot_product_attention(query: Tensor,
                                  key: Tensor,
                                  value: Tensor,
                                  mask: Union[None, Tensor] = None) -> Tensor:
-
     similarity = query.bmm(key.transpose(1, 2))
 
     # scale similarity matrix by square root of number of dimensions
@@ -36,7 +35,6 @@ class BaselineModel(nn.Module):
                  spatial_dropout: float = 0.,
                  bidirectional: bool = False,
                  padding_index: int = 0):
-
         super(BaselineModel, self).__init__()
 
         self.encoder = LstmEncoder(vocab_size=vocab_size,
@@ -105,7 +103,6 @@ class LstmAttentionModel(nn.Module):
         self.spatial_dropout = SpatialDropout(p=spatial_dropout)
 
     def forward(self, encoder_seq, decoder_seq):
-
         mask = get_pad_mask(encoder_seq, decoder_seq)
 
         encoder_seq, memory = self.encoder(encoder_seq)
@@ -127,7 +124,7 @@ class LstmAttentionModel(nn.Module):
         return self.fc(output)
 
 
-class BaselineSegmentationModel(nn.Module):
+class LstmTagger(nn.Module):
 
     def __init__(self,
                  char_vocab_size: int,
@@ -139,30 +136,31 @@ class BaselineSegmentationModel(nn.Module):
                  spatial_dropout: float = 0.,
                  bidirectional: bool = False,
                  padding_index: int = 0):
-
-        super(BaselineSegmentationModel, self).__init__()
+        super(LstmTagger, self).__init__()
 
         self.tag_vocab_size = tag_vocab_size
         self.padding_index = padding_index
 
         self.directions = 2 if bidirectional else 1
 
-        self.encoder = LstmEncoder(vocab_size=char_vocab_size,
-                                   emb_dim=emb_dim,
-                                   hidden_size=hidden_size,
-                                   lstm_layers=lstm_layers,
-                                   layer_dropout=layer_dropout,
-                                   spatial_dropout=spatial_dropout,
-                                   bidirectional=bidirectional,
-                                   padding_index=padding_index)
+        self.encoder = LstmEncoderPacked(vocab_size=char_vocab_size,
+                                         emb_dim=emb_dim,
+                                         hidden_size=hidden_size,
+                                         lstm_layers=lstm_layers,
+                                         layer_dropout=layer_dropout,
+                                         spatial_dropout=spatial_dropout,
+                                         bidirectional=bidirectional,
+                                         padding_index=padding_index)
 
         self.fc = nn.Linear(in_features=hidden_size * self.directions,
                             out_features=tag_vocab_size)
 
-        self.loss = torch.nn.CrossEntropyLoss(reduction='sum')
+        # ignore pads when calculating loss
+        self.loss = torch.nn.CrossEntropyLoss(
+            # ignore_index=self.padding_index,
+            reduction='mean')
 
     def compute_outputs(self, sequences):
-
         encoder_seq, memory = self.encoder(sequences)
         encoder_out = self.fc(encoder_seq)
 
@@ -173,7 +171,6 @@ class BaselineSegmentationModel(nn.Module):
         return encoder_out
 
     def forward(self, sequences, labels):
-
         scores = self.compute_outputs(sequences)
 
         scores = scores.view(-1, self.tag_vocab_size)
