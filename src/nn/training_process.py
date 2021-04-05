@@ -68,6 +68,8 @@ def evaluate(model: Module,
 
         progress_bar.update()
 
+        # print(model.predict(encoder_seq))
+
     progress_bar.close()
 
     return losses

@@ -10,7 +10,7 @@ from src.utils.tokenizers import SymTokenizer
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import train, evaluate, training_cycle
 from src.nn.layers import LstmEncoder
-from src.nn.models import LstmTagger
+from src.nn.models import LstmTagger, LstmCrfTagger
 
 
 def read_converted_lemmas(path: str):
@@ -50,13 +50,19 @@ test_ds = BmesSegmentationDataset(original=test_original,
                                   unk_index=UNK_INDEX,
                                   max_len=MAX_LEN)
 
-
 enc = LstmTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
                  tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
                  emb_dim=256,
                  hidden_size=256,
                  bidirectional=True,
                  padding_index=PAD_INDEX)
+
+# enc = LstmCrfTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
+#                     tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
+#                     emb_dim=256,
+#                     hidden_size=256,
+#                     bidirectional=True,
+#                     padding_index=PAD_INDEX)
 
 # print(train_ds[0][0])
 # print(train_ds[0][0].size())
