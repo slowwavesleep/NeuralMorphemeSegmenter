@@ -93,16 +93,22 @@ class SymTokenizer:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
         return "".join([self._index2sym.get(element, "<UNK>") for element in sequence])
 
-    def pad_or_clip(self, sequence: List[int], max_len: int, *, pre_pad: bool = False):
-        sequence = sequence[:max_len]
-        num_pads = max(0, max_len - len(sequence))
+    def pad_or_clip(self,
+                    sequence: List[int],
+                    max_len: int,
+                    *,
+                    pre_pad: bool = False):
+
+        sequence = sequence[:max_len - 2]
+        num_pads = max(0, max_len - 2 - len(sequence))
         pads = [self.pad_index] * num_pads
+
+        # sequence = [100] + sequence + [200]
 
         if pads:
             if pre_pad:
                 sequence = pads + sequence
             else:
                 sequence = sequence + pads
-            return sequence
-        else:
-            return sequence
+
+        return sequence

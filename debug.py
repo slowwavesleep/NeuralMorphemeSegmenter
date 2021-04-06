@@ -81,3 +81,11 @@ enc.to(device)
 # print(train_ds.bmes_tokenizer._index2sym)
 
 training_cycle(enc, train_loader, valid_loader, optimizer, device, 10., 5)
+
+for x, y in valid_loader:
+    preds = enc.predict(x.to(device))
+    break
+
+print(test_ds.original_tokenizer.decode(x[121, :].cpu().numpy()))
+print(test_ds.bmes_tokenizer.decode(preds[121, :]))
+print(test_ds.bmes_tokenizer.decode(y.cpu().numpy()[121, :]))

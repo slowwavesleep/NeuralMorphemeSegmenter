@@ -8,4 +8,4 @@ CONVERTED_LEMMAS_PATHS = {"train": "data/lemmas_train.jsonl",
 
 PAD_INDEX = 0
 UNK_INDEX = 1
-MAX_LEN = 18
+MAX_LEN = 36

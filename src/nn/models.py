@@ -144,21 +144,22 @@ class LstmTagger(nn.Module):
 
         self.directions = 2 if bidirectional else 1
 
-        self.encoder = LstmEncoderPacked(vocab_size=char_vocab_size,
-                                         emb_dim=emb_dim,
-                                         hidden_size=hidden_size,
-                                         lstm_layers=lstm_layers,
-                                         layer_dropout=layer_dropout,
-                                         spatial_dropout=spatial_dropout,
-                                         bidirectional=bidirectional,
-                                         padding_index=padding_index)
+        self.encoder = LstmEncoder(vocab_size=char_vocab_size,
+                                   emb_dim=emb_dim,
+                                   hidden_size=hidden_size,
+                                   lstm_layers=lstm_layers,
+                                   layer_dropout=layer_dropout,
+                                   spatial_dropout=spatial_dropout,
+                                   bidirectional=bidirectional,
+                                   padding_index=padding_index)
 
         self.fc = nn.Linear(in_features=hidden_size * self.directions,
                             out_features=tag_vocab_size)
 
         # ignore pads when calculating loss
         self.loss = torch.nn.CrossEntropyLoss(
-            # ignore_index=self.padding_index,
+            ignore_index=self.padding_index,
+
             reduction='mean')
 
     def compute_outputs(self, sequences):
@@ -167,7 +168,7 @@ class LstmTagger(nn.Module):
 
         pad_mask = (sequences == self.padding_index).float()
 
-        encoder_out[:, :, self.padding_index] += pad_mask*10000
+        encoder_out[:, :, self.padding_index] += pad_mask * 10000
 
         return encoder_out
 
@@ -184,7 +185,7 @@ class LstmTagger(nn.Module):
 
         predicted = scores.argmax(dim=2)
 
-        return predicted.t().cpu().numpy()
+        return predicted.cpu().numpy()
 
 
 class LstmCrfTagger(nn.Module):
@@ -226,7 +227,7 @@ class LstmCrfTagger(nn.Module):
 
         pad_mask = (sequences == self.padding_index).float()
 
-        encoder_out[:, :, self.padding_index] += pad_mask*10000
+        encoder_out[:, :, self.padding_index] += pad_mask * 10000
 
         return encoder_out
 
