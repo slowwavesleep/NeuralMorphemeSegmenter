@@ -7,6 +7,8 @@ from torch.optim.optimizer import Optimizer
 import json
 import os
 
+from src.utils.metrics import evaluate_metric_padded
+
 
 def train(model: Module,
           loader: DataLoader,
@@ -22,7 +24,7 @@ def train(model: Module,
 
     model.train()
 
-    for encoder_seq, target_seq in loader:
+    for encoder_seq, target_seq, true_lens in loader:
         encoder_seq = encoder_seq.to(device)
         target_seq = target_seq.to(device)
 
@@ -55,16 +57,20 @@ def evaluate(model: Module,
 
     model.eval()
 
-    for encoder_seq, target_seq in loader:
+    for encoder_seq, target_seq, true_lens in loader:
         encoder_seq = encoder_seq.to(device)
         target_seq = target_seq.to(device)
 
         with torch.no_grad():
             loss = model(encoder_seq, target_seq)
+            preds = model.predict(encoder_seq)
 
         losses.append(loss.item())
 
-        progress_bar.set_postfix(loss=np.mean(losses[-last_n_losses:]))
+        score = evaluate_metric_padded(target_seq.cpu().numpy(), preds, true_lens)
+
+        progress_bar.set_postfix(loss=np.mean(losses[-last_n_losses:]),
+                                 score=score)
 
         progress_bar.update()
 

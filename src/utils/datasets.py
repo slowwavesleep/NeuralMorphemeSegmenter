@@ -37,9 +37,11 @@ class BmesSegmentationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.original)
 
-    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
+    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor, int]:
         encoder_seq = self.original_tokenizer.encode(self.original[index])
         target_seq = self.bmes_tokenizer.encode(self.segmented[index])
+
+        true_length = len(encoder_seq)
 
         encoder_seq = self.original_tokenizer.pad_or_clip(encoder_seq,
                                                           max_len=self.max_len)
@@ -49,4 +51,4 @@ class BmesSegmentationDataset(Dataset):
         encoder_seq = Tensor(encoder_seq).long()
         target_seq = Tensor(target_seq).long()
 
-        return encoder_seq, target_seq
+        return encoder_seq, target_seq, true_length

@@ -2,16 +2,13 @@ import json
 import numpy as np
 from torch.utils.data import DataLoader
 import torch
-from tqdm import tqdm
-from transformers import AdamW
-from sklearn.metrics import f1_score
 
 from constants import UNK_INDEX, PAD_INDEX, CONVERTED_LEMMAS_PATHS, MAX_LEN
+from src.utils.metrics import evaluate_metric_padded
 from src.utils.tokenizers import SymTokenizer
 from src.utils.datasets import BmesSegmentationDataset
-from src.nn.training_process import train, evaluate, training_cycle
-from src.nn.layers import LstmEncoder
-from src.nn.models import LstmTagger, LstmCrfTagger
+from src.nn.training_process import training_cycle
+from src.nn.models import LstmTagger
 
 
 def read_converted_lemmas(path: str):
@@ -80,23 +77,17 @@ device = torch.device('cuda')
 enc.to(device)
 
 # print(train_ds.bmes_tokenizer._index2sym)
+#
 
-labels = list(set(train_ds.bmes_tokenizer._index2sym.keys()) - {PAD_INDEX})
 
-print(labels)
-
-training_cycle(enc, train_loader, valid_loader, optimizer, device, 10., 2)
+training_cycle(enc, train_loader, valid_loader, optimizer, device, 10., 5)
 
 scores = []
 
-for x, y in valid_loader:
+for x, y, true_lens in valid_loader:
     preds = enc.predict(x.to(device))
-    preds = preds.flatten()
-    y = y.cpu().numpy().flatten()
-    scores.append(f1_score(y, preds, average="micro", labels=labels))
+    y = y.cpu().numpy()
+
+    scores.append(evaluate_metric_padded(y, preds, true_lens))
 
 print(np.mean(scores))
-
-# print(test_ds.original_tokenizer.decode(x[121, :].cpu().numpy()))
-# print(test_ds.bmes_tokenizer.decode(preds[121, :]))
-# print(test_ds.bmes_tokenizer.decode(y.cpu().numpy()[121, :]))

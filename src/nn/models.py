@@ -159,7 +159,6 @@ class LstmTagger(nn.Module):
         # ignore pads when calculating loss
         self.loss = torch.nn.CrossEntropyLoss(
             ignore_index=self.padding_index,
-
             reduction='mean')
 
     def compute_outputs(self, sequences):

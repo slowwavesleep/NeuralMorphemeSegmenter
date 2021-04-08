@@ -76,6 +76,11 @@ class SymTokenizer:
         return self
 
     @property
+    def labels(self):
+        labels = self._sym2index.copy()
+        return labels
+
+    @property
     def vocab_size(self):
         if not self._vocab_flag:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
