@@ -1,10 +1,13 @@
 import json
+from functools import partial
+
 import numpy as np
 from torch.utils.data import DataLoader
 import torch
+from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 
 from constants import UNK_INDEX, PAD_INDEX, CONVERTED_LEMMAS_PATHS, MAX_LEN
-from src.utils.metrics import evaluate_metric_padded
+from src.utils.metrics import evaluate_tokenwise_metric
 from src.utils.tokenizers import SymTokenizer
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
@@ -80,14 +83,24 @@ enc.to(device)
 #
 
 
-training_cycle(enc, train_loader, valid_loader, optimizer, device, 10., 5)
+training_cycle(model=enc,
+               train_loader=train_loader,
+               validation_loader=valid_loader,
+               optimizer=optimizer,
+               device=device,
+               clip=3.,
+               metrics={"f1_score": partial(f1_score, average="weighted"),
+                        "accuracy": accuracy_score,
+                        "precision": partial(precision_score, average="weighted"),
+                        "recall": partial(recall_score, average="weighted")},
+               epochs=3)
 
 scores = []
 
-for x, y, true_lens in valid_loader:
-    preds = enc.predict(x.to(device))
-    y = y.cpu().numpy()
-
-    scores.append(evaluate_metric_padded(y, preds, true_lens))
-
-print(np.mean(scores))
+# for x, y, true_lens in valid_loader:
+#     preds = enc.predict(x.to(device))
+#     y = y.cpu().numpy()
+#
+#     scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
+#
+# print(np.mean(scores))

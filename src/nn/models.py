@@ -1,8 +1,9 @@
+from typing import Union
+
 from torch import nn
 import torch
 from torch import Tensor
 import torch.nn.functional as F
-from typing import Union
 from torchcrf import CRF
 
 from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, get_pad_mask, SpatialDropout
