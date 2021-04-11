@@ -8,7 +8,7 @@ from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_sc
 
 from constants import UNK_INDEX, PAD_INDEX, CONVERTED_LEMMAS_PATHS, MAX_LEN
 from src.utils.metrics import evaluate_tokenwise_metric, evaluate_examplewise_accuracy
-from src.utils.tokenizers import SymTokenizer
+from src.utils.tokenizers import SymTokenizer, bmes2sequence
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
 from src.nn.models import LstmTagger, RandomTagger, LstmCrfTagger
@@ -51,17 +51,20 @@ test_ds = BmesSegmentationDataset(original=test_original,
                                   unk_index=UNK_INDEX,
                                   max_len=MAX_LEN)
 
+HIDDEN_SIZE = 128
+EMB_DIM = 128
+
 # enc = LstmTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
 #                  tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
-#                  emb_dim=256,
-#                  hidden_size=256,
+#                  emb_dim=EMB_DIM,
+#                  hidden_size=HIDDEN_SIZE,
 #                  bidirectional=True,
 #                  padding_index=PAD_INDEX)
 
 enc = LstmCrfTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
                     tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
-                    emb_dim=256,
-                    hidden_size=256,
+                    emb_dim=EMB_DIM,
+                    hidden_size=HIDDEN_SIZE,
                     bidirectional=True,
                     padding_index=PAD_INDEX)
 
@@ -74,7 +77,7 @@ train_loader = DataLoader(train_ds, batch_size=1024, shuffle=True)
 valid_loader = DataLoader(test_ds, batch_size=1024)
 
 optimizer = torch.optim.Adam(params=enc.parameters())
-
+# optimizer = torch.optim.SGD(params=enc.parameters(), lr=1e-5)
 device = torch.device('cuda')
 
 enc.to(device)
@@ -88,7 +91,7 @@ if True:
                    validation_loader=valid_loader,
                    optimizer=optimizer,
                    device=device,
-                   clip=3.,
+                   clip=5.,
                    metrics={"f1_score": partial(f1_score, average="weighted"),
                             "accuracy": accuracy_score,
                             "precision": partial(precision_score, average="weighted"),
@@ -101,8 +104,14 @@ ex_scores = []
 
 for x, y, true_lens in valid_loader:
     preds = enc.predict(x.to(device))
-    print(preds)
+    x = x.cpu().numpy()
+    for ex, pred, tr in zip(x, preds, true_lens):
+        pass
+        # print(bmes2sequence(test_ds.original_tokenizer.decode(ex[:tr]), test_ds.bmes_tokenizer.decode(pred[:tr])))
+        # print(test_ds.original_tokenizer.decode(ex))
+        # print(test_ds.bmes_tokenizer.decode(pred))
     break
+
     # y = y.cpu().numpy()
 
     # scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))

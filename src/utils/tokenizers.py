@@ -1,6 +1,19 @@
 from typing import List, Tuple, Dict
 
 
+def bmes2sequence(original_sequence: str, bmes_tags: str, *, sep: str = "|") -> str:
+    assert len(original_sequence) == len(bmes_tags)
+
+    output = []
+    for ch, tag in zip(original_sequence, bmes_tags):
+        output.append(ch)
+        if tag in ("S", "E"):
+            output.append(sep)
+    if output[-1] == sep:
+        output = output[:-1]
+    return "".join(output)
+
+
 def _sequence2bmes(segmented_sequence: str, *, sep: str = "|") -> str:
     segments = segmented_sequence.split(sep)
     result = []
@@ -81,24 +94,24 @@ class SymTokenizer:
         return self
 
     @property
-    def labels(self):
+    def labels(self) -> dict:
         labels = self._sym2index.copy()
         return labels
 
     @property
-    def vocab_size(self):
+    def vocab_size(self) -> int:
         if not self._vocab_flag:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
         return len(self._index2sym)
 
-    def encode(self, sequence: str):
+    def encode(self, sequence: str) -> List[int]:
         if not self._vocab_flag:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
         if self.convert_to_bmes:
             sequence = _sequence2bmes(sequence)
         return [self._sym2index.get(element, self.unk_index) for element in sequence]
 
-    def decode(self, sequence: List[int]):
+    def decode(self, sequence: List[int]) -> str:
         if not self._vocab_flag:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
         return "".join([self._index2sym.get(element, "<UNK>") for element in sequence])
@@ -107,7 +120,7 @@ class SymTokenizer:
                     sequence: List[int],
                     max_len: int,
                     *,
-                    pre_pad: bool = False):
+                    pre_pad: bool = False) -> List[int]:
 
         sequence = sequence[:max_len]
         num_pads = max(0, max_len - len(sequence))

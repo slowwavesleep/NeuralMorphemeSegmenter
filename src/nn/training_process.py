@@ -136,7 +136,7 @@ def training_cycle(model,
 
         epoch_accuracy = epoch_scores["example-wise_accuracy"]
 
-        message = "\n" + "*" * 30 + "\n"
+        message = "\n" + "*" * 50 + "\n"
         message += f"Epoch: {n_epoch}\n"
         message += f"Train loss: {mean_train_loss}\n"
         message += f"Validation loss: {mean_validation_loss}\n"
@@ -147,7 +147,7 @@ def training_cycle(model,
             if name != "example-wise_accuracy":
                 message += f"    {name}: {score}\n"
 
-        message += "*" * 30 + "\n"
+        message += "*" * 50 + "\n"
         print(message)
 
         if epoch_accuracy > best_accuracy:

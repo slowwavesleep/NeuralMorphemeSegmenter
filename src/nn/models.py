@@ -221,7 +221,7 @@ class LstmCrfTagger(nn.Module):
         self.fc = nn.Linear(in_features=hidden_size * self.directions,
                             out_features=tag_vocab_size)
 
-        self.crf = CRF(self.tag_vocab_size)
+        self.crf = CRF(self.tag_vocab_size, batch_first=True)
 
     def compute_outputs(self, sequences):
         encoder_seq, memory = self.encoder(sequences)
@@ -236,11 +236,11 @@ class LstmCrfTagger(nn.Module):
     def forward(self, sequences, labels):
         scores = self.compute_outputs(sequences)
 
-        return -self.crf(scores, labels)
+        return -self.crf(scores, labels, reduction="sum")
 
     def predict(self, sentences):
         scores = self.compute_outputs(sentences)
-        predicted = np.array(self.crf.decode(scores)).transpose()
+        predicted = np.array(self.crf.decode(scores))
 
         return predicted
 
