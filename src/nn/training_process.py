@@ -1,6 +1,3 @@
-import json
-import os
-from functools import partial
 from collections import defaultdict
 from typing import Callable, Dict, Optional, Tuple
 
@@ -10,9 +7,8 @@ import torch
 from torch.nn import Module
 from torch.utils.data import DataLoader
 from torch.optim.optimizer import Optimizer
-from sklearn.metrics import f1_score, accuracy_score
 
-from src.utils.metrics import evaluate_tokenwise_metric, evaluate_examplewise_accuracy
+from src.utils.metrics import evaluate_batch
 
 
 def train(model: Module,
@@ -80,17 +76,11 @@ def evaluate(model: Module,
 
         if metrics is not None:
 
-            for name, func in metrics.items():
-                tokenwise_score = evaluate_tokenwise_metric(y_true=target_seq.cpu().numpy(),
-                                                            y_pred=preds,
-                                                            true_lengths=true_lens,
-                                                            scoring_fn=func)
-                batch_scores[f"tokenwise_{name}"].append(tokenwise_score)
-
-                examplewise_accuracy_score = evaluate_examplewise_accuracy(y_true=target_seq.cpu().numpy(),
-                                                                           y_pred=preds,
-                                                                           true_lengths=true_lens)
-                batch_scores["example-wise_accuracy"].append(examplewise_accuracy_score)
+            batch_scores = evaluate_batch(y_true=target_seq,
+                                          y_pred=preds,
+                                          metrics=metrics,
+                                          batch_scores=batch_scores,
+                                          true_lengths=true_lens)
 
     if batch_scores:
         epoch_scores = {name: np.mean(values) for name, values in batch_scores.items()}
@@ -178,5 +168,6 @@ def training_cycle(model,
         #     file_object.write(json.dumps(info, indent=2))
 
 
-def testing_cycle(model, test_loader, device, metrics):
+# TODO Implement error analysis
+def testing_cycle(model, test_loader, device, metrics, verbose):
     pass
