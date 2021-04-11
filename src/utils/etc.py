@@ -1,5 +1,6 @@
 import itertools
-from typing import Iterable, List
+import json
+from typing import Iterable, List, Tuple
 
 
 def remove_pads(sequences: Iterable[Iterable[int]],
@@ -23,3 +24,17 @@ def remove_pads(sequences: Iterable[Iterable[int]],
 
 def flatten_list(list_to_flatten: List[list]) -> list:
     return list(itertools.chain(*list_to_flatten))
+
+
+def read_converted_lemmas(path: str) -> Tuple[List[int], List[str], List[str]]:
+    indices = []
+    original = []
+    segmented = []
+    with open(path) as file:
+        for line in file:
+            data = json.loads(line)
+            indices.append(data["index"])
+            original.append(data["original"])
+            segmented.append(data["segmented"])
+
+    return indices, original, segmented

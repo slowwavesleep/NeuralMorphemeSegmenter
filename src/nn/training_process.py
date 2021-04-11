@@ -2,7 +2,7 @@ import json
 import os
 from functools import partial
 from collections import defaultdict
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
@@ -28,7 +28,7 @@ def train(model: Module,
 
     model.train()
 
-    for encoder_seq, target_seq, true_lens in loader:
+    for encoder_seq, target_seq, true_lens, _ in loader:
         encoder_seq = encoder_seq.to(device)
         target_seq = target_seq.to(device)
 
@@ -55,7 +55,7 @@ def evaluate(model: Module,
              device: object,
              metrics: Optional[Dict[str, Callable]] = None,
              last_n_losses: int = 500,
-             verbose: bool = True):
+             verbose: bool = True) -> Tuple[list, dict, dict]:
     losses = []
     epoch_scores = dict()
     batch_scores = defaultdict(lambda: [])
@@ -64,7 +64,7 @@ def evaluate(model: Module,
 
     model.eval()
 
-    for encoder_seq, target_seq, true_lens in loader:
+    for encoder_seq, target_seq, true_lens, indices in loader:
         encoder_seq = encoder_seq.to(device)
         target_seq = target_seq.to(device)
 
@@ -108,7 +108,7 @@ def training_cycle(model,
                    clip,
                    metrics: Optional[Dict[str, Callable]] = None,
                    epochs: int = 1,
-                   n_without_improvements: int = 5):
+                   n_without_improvements: int = 2):
     train_losses = []
     validation_losses = []
 
@@ -157,8 +157,10 @@ def training_cycle(model,
         #     torch.save(model.state_dict(), f'models/best_language_model_state_dict.pth')
         #     torch.save(optimizer.state_dict(), 'models/best_optimizer_state_dict.pth')
         #
-        else:
+        elif not n_without_improvements:
             break
+        else:
+            n_without_improvements -= 1
 
         # torch.save(model.state_dict(), f'models/last_language_model_state_dict.pth')
         # torch.save(optimizer.state_dict(), 'models/last_optimizer_state_dict.pth')
@@ -176,5 +178,5 @@ def training_cycle(model,
         #     file_object.write(json.dumps(info, indent=2))
 
 
-def testing_cycle():
+def testing_cycle(model, test_loader, device, metrics):
     pass
