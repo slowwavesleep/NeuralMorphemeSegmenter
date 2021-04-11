@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
@@ -29,7 +31,6 @@ class LstmEncoder(nn.Module):
                  spatial_dropout: float = 0.,
                  bidirectional: bool = False,
                  padding_index: int = 0):
-
         super(LstmEncoder, self).__init__()
 
         if lstm_layers < 2 and layer_dropout != 0:
@@ -49,7 +50,6 @@ class LstmEncoder(nn.Module):
                             batch_first=True)
 
     def forward(self, encoder_seq):
-
         encoder_seq = self.embedding(encoder_seq)
 
         encoder_seq = self.spatial_dropout(encoder_seq)
@@ -70,7 +70,6 @@ class LstmEncoderPacked(LstmEncoder):
                  spatial_dropout: float = 0.,
                  bidirectional: bool = False,
                  padding_index: int = 0):
-
         super().__init__(vocab_size,
                          emb_dim,
                          hidden_size,
@@ -85,7 +84,6 @@ class LstmEncoderPacked(LstmEncoder):
         self.bidirectional = bidirectional
 
     def forward(self, encoder_seq):
-
         initial_len = encoder_seq.size(-1)
 
         encoder_lens = get_non_pad_lens(encoder_seq)
@@ -128,7 +126,6 @@ class LstmDecoder(nn.Module):
                  spatial_dropout: float = 0.,
                  padding_index: int = 0,
                  head: bool = True):
-
         super(LstmDecoder, self).__init__()
 
         self.head = head
@@ -148,7 +145,6 @@ class LstmDecoder(nn.Module):
                             out_features=vocab_size)
 
     def forward(self, decoder_seq, memory):
-
         decoder_seq = self.embedding(decoder_seq)
 
         decoder_seq = self.spatial_dropout(decoder_seq)
@@ -171,7 +167,6 @@ class LstmDecoderPacked(LstmDecoder):
                  spatial_dropout: float = 0.,
                  padding_index: int = 0,
                  head: bool = True):
-
         super().__init__(vocab_size,
                          emb_dim,
                          hidden_size,
@@ -183,7 +178,6 @@ class LstmDecoderPacked(LstmDecoder):
         self.layer_norm = nn.LayerNorm(emb_dim)
 
     def forward(self, decoder_seq, memory):
-
         initial_len = decoder_seq.size(-1)
 
         decoder_lens = get_non_pad_lens(decoder_seq)
@@ -209,6 +203,46 @@ class LstmDecoderPacked(LstmDecoder):
             decoder_seq = self.fc(decoder_seq)
 
         return decoder_seq
+
+
+class CnnEncoder(nn.Module):
+
+    def __init__(self,
+                 vocab_size: int,
+                 emb_dim: int,
+                 dropout: float,
+                 num_filters: int,
+                 kernel_size: int,
+                 out_dim: int,
+                 padding_index: int):
+        super(CnnEncoder, self).__init__()
+        self.vocab_size = vocab_size
+        self.emb_dim = emb_dim
+        self.num_filters = num_filters
+        self.kernel_size = kernel_size
+        self.out_dim = out_dim
+
+        self.embedding = nn.Embedding(num_embeddings=vocab_size,
+                                      embedding_dim=emb_dim,
+                                      padding_idx=padding_index)
+
+        # self.conv_layers = nn.ModuleList([nn.Conv1d(in_channels=self.emb_dim,
+        #                                             out_channels=self.num_filters,
+        #                                             kernel_size=k)
+        #                                   for k in self.kernel_sizes])
+
+        self.conv = nn.Conv1d(in_channels=self.emb_dim,
+                              out_channels=self.num_filters,
+                              kernel_size=kernel_size,
+                              padding=1)
+
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        x = self.embedding(x)
+        x = torch.relu(self.conv(x.transpose(1, 2)).transpose(1, 2))
+
+        return x
 
 
 def get_pad_mask(seq_1, seq_2):

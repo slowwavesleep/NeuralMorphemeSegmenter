@@ -8,7 +8,8 @@ import torch.nn.functional as F
 from torchcrf import CRF
 import numpy as np
 
-from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, get_pad_mask, SpatialDropout
+from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, get_pad_mask, SpatialDropout,\
+                          CnnEncoder
 
 
 def scaled_dot_product_attention(query: Tensor,
@@ -243,6 +244,61 @@ class LstmCrfTagger(nn.Module):
         predicted = np.array(self.crf.decode(scores))
 
         return predicted
+
+
+class CnnTagger(nn.Module):
+
+    def __init__(self,
+                 char_vocab_size: int,
+                 tag_vocab_size: int,
+                 emb_dim: int,
+                 num_filters: int,
+                 kernel_size: int,
+                 spatial_dropout: float = 0.,
+                 padding_index: int = 0):
+        super(CnnTagger, self).__init__()
+        self.tag_vocab_size = tag_vocab_size
+        self.padding_index = padding_index
+
+        self.encoder = CnnEncoder(vocab_size=char_vocab_size,
+                                  emb_dim=emb_dim,
+                                  dropout=0.3,
+                                  num_filters=num_filters,
+                                  kernel_size=kernel_size,
+                                  out_dim=100,
+                                  padding_index=padding_index)
+
+        self.fc = nn.Linear(in_features=num_filters,
+                            out_features=tag_vocab_size)
+
+        self.loss = torch.nn.CrossEntropyLoss(
+            ignore_index=self.padding_index,
+            reduction='sum')
+
+    def compute_outputs(self, sequences):
+        encoder_seq = self.encoder(sequences)
+        encoder_out = self.fc(encoder_seq)
+
+        pad_mask = (sequences == self.padding_index).float()
+
+        encoder_out[:, :, self.padding_index] += pad_mask * 10000
+
+        return encoder_out
+
+    def forward(self, sequences, labels):
+        scores = self.compute_outputs(sequences)
+
+        scores = scores.view(-1, self.tag_vocab_size)
+        labels = labels.view(-1)
+
+        return self.loss(scores, labels)
+
+    def predict(self, sentences):
+        scores = self.compute_outputs(sentences)
+
+        predicted = scores.argmax(dim=2)
+
+        return predicted.cpu().numpy()
 
 
 class RandomTagger(nn.Module):

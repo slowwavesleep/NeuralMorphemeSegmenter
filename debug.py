@@ -9,7 +9,8 @@ from src.utils.etc import read_converted_lemmas
 from src.utils.tokenizers import SymTokenizer, bmes2sequence
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle, testing_cycle
-from src.nn.models import LstmCrfTagger, LstmTagger
+from src.nn.models import LstmCrfTagger, LstmTagger, CnnTagger
+from src.nn.layers import CnnEncoder
 
 train_indices, train_original, train_segmented = read_converted_lemmas(CONVERTED_LEMMAS_PATHS["train"])
 valid_indices, valid_original, valid_segmented = read_converted_lemmas(CONVERTED_LEMMAS_PATHS["valid"])
@@ -61,18 +62,21 @@ enc = LstmCrfTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
                     bidirectional=True,
                     padding_index=PAD_INDEX)
 
+# enc = CnnTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
+#                 tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
+#                 emb_dim=EMB_DIM,
+#                 num_filters=300,
+#                 kernel_size=3,
+#                 padding_index=PAD_INDEX)
+
 train_loader = DataLoader(train_ds, batch_size=512, shuffle=True)
 valid_loader = DataLoader(valid_ds, batch_size=512)
 test_loader = DataLoader(test_ds, batch_size=512)
 
 optimizer = torch.optim.Adam(params=enc.parameters())
-# optimizer = torch.optim.SGD(params=enc.parameters(), lr=1e-5)
 device = torch.device('cuda')
 
 enc.to(device)
-
-# print(train_ds.bmes_tokenizer._index2sym)
-#
 
 if True:
     training_cycle(model=enc,
@@ -90,6 +94,10 @@ if True:
 scores = []
 
 ex_scores = []
+
+# for x, y, true_lens, _ in valid_loader:
+#     print(enc(x.to(device)).size())
+#     break
 
 
 for x, y, true_lens, _ in valid_loader:
