@@ -1,10 +1,12 @@
-from typing import Union
+from typing import Union, Optional, List
+from contextlib import contextmanager
 
 from torch import nn
 import torch
 from torch import Tensor
 import torch.nn.functional as F
 from torchcrf import CRF
+import numpy as np
 
 from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, get_pad_mask, SpatialDropout
 
@@ -240,3 +242,36 @@ class LstmCrfTagger(nn.Module):
         scores = self.compute_outputs(sentences)
 
         return self.crf.decode(scores)
+
+
+class RandomTagger(nn.Module):
+
+    def __init__(self,
+                 labels: List[int],
+                 seed: Optional[int] = None):
+
+        self.labels = labels
+        self.seed = seed
+
+    def compute_outputs(self, sequences):
+        pass
+
+    def forward(self, sequences, labels):
+        pass
+
+    def predict(self, sequences):
+        size = tuple(sequences.size())
+        with self.temp_seed(self.seed):
+            predicted = np.random.choice(a=self.labels, size=size)
+
+        return predicted
+
+    @staticmethod
+    @contextmanager
+    def temp_seed(seed):
+        state = np.random.get_state()
+        np.random.seed(seed)
+        try:
+            yield
+        finally:
+            np.random.set_state(state)
