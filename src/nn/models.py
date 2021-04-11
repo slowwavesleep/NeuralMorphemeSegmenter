@@ -240,8 +240,9 @@ class LstmCrfTagger(nn.Module):
 
     def predict(self, sentences):
         scores = self.compute_outputs(sentences)
+        predicted = np.array(self.crf.decode(scores)).transpose()
 
-        return self.crf.decode(scores)
+        return predicted
 
 
 class RandomTagger(nn.Module):

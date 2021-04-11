@@ -11,7 +11,7 @@ from src.utils.metrics import evaluate_tokenwise_metric, evaluate_examplewise_ac
 from src.utils.tokenizers import SymTokenizer
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
-from src.nn.models import LstmTagger, RandomTagger
+from src.nn.models import LstmTagger, RandomTagger, LstmCrfTagger
 
 
 def read_converted_lemmas(path: str):
@@ -51,19 +51,19 @@ test_ds = BmesSegmentationDataset(original=test_original,
                                   unk_index=UNK_INDEX,
                                   max_len=MAX_LEN)
 
-enc = LstmTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
-                 tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
-                 emb_dim=256,
-                 hidden_size=256,
-                 bidirectional=True,
-                 padding_index=PAD_INDEX)
+# enc = LstmTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
+#                  tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
+#                  emb_dim=256,
+#                  hidden_size=256,
+#                  bidirectional=True,
+#                  padding_index=PAD_INDEX)
 
-# enc = LstmCrfTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
-#                     tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
-#                     emb_dim=256,
-#                     hidden_size=256,
-#                     bidirectional=True,
-#                     padding_index=PAD_INDEX)
+enc = LstmCrfTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
+                    tag_vocab_size=train_ds.bmes_tokenizer.vocab_size,
+                    emb_dim=256,
+                    hidden_size=256,
+                    bidirectional=True,
+                    padding_index=PAD_INDEX)
 
 # print(train_ds[0][0])
 # print(train_ds[0][0].size())
@@ -93,7 +93,7 @@ if True:
                             "accuracy": accuracy_score,
                             "precision": partial(precision_score, average="weighted"),
                             "recall": partial(recall_score, average="weighted")},
-                   epochs=3)
+                   epochs=5)
 
 scores = []
 
@@ -101,11 +101,16 @@ ex_scores = []
 
 for x, y, true_lens in valid_loader:
     preds = enc.predict(x.to(device))
-    y = y.cpu().numpy()
+    print(preds)
+    break
+    # y = y.cpu().numpy()
 
-    scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
+    # scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
+    # ex_scores.append(evaluate_examplewise_accuracy(y, preds, true_lens))
 
-print(np.mean(scores))
+
+# print(np.mean(scores))
+# print(np.mean(ex_scores))
 
 # random_tagger = RandomTagger(seed=100,
 #                              labels=train_ds.bmes_tokenizer.meaningful_label_indices)
