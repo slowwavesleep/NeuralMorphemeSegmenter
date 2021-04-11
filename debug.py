@@ -11,7 +11,7 @@ from src.utils.metrics import evaluate_tokenwise_metric, evaluate_examplewise_ac
 from src.utils.tokenizers import SymTokenizer
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
-from src.nn.models import LstmTagger
+from src.nn.models import LstmTagger, RandomTagger
 
 
 def read_converted_lemmas(path: str):
@@ -82,7 +82,7 @@ enc.to(device)
 # print(train_ds.bmes_tokenizer._index2sym)
 #
 
-if False:
+if True:
     training_cycle(model=enc,
                    train_loader=train_loader,
                    validation_loader=valid_loader,
@@ -99,23 +99,22 @@ scores = []
 
 ex_scores = []
 
-# for x, y, true_lens in valid_loader:
-#     preds = enc.predict(x.to(device))
-#     y = y.cpu().numpy()
-#
-#     scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
-#
-# print(np.mean(scores))
-
 for x, y, true_lens in valid_loader:
-    size = tuple(y.size())
-    sample = list(train_ds.bmes_tokenizer.labels.values())
-    sample.remove(UNK_INDEX)
-    sample.remove(PAD_INDEX)
-    preds = np.random.choice(a=sample, size=size)
+    preds = enc.predict(x.to(device))
     y = y.cpu().numpy()
+
     scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
-    ex_scores.append(evaluate_examplewise_accuracy(y, preds, true_lens))
 
 print(np.mean(scores))
-print(np.mean(ex_scores))
+
+# random_tagger = RandomTagger(seed=100,
+#                              labels=train_ds.bmes_tokenizer.meaningful_label_indices)
+#
+# for x, y, true_lens in valid_loader:
+#     preds = random_tagger.predict(x)
+#     y = y.cpu().numpy()
+#     scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
+#     ex_scores.append(evaluate_examplewise_accuracy(y, preds, true_lens))
+#
+# print(np.mean(scores))
+# print(np.mean(ex_scores))

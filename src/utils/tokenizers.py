@@ -23,8 +23,7 @@ def _segment2bmes(segment: str) -> str:
 
 def _build_sym_index(sequences: List[str],
                      pad_index: int,
-                     unk_index: int) -> Tuple[Dict[int, str], Dict[str, int]]:
-
+                     unk_index: int) -> Tuple[Dict[int, str], Dict[str, int], List[int]]:
     unique_chars = set("".join(sequences))
     index2sym = {index: ch for index, ch in enumerate(unique_chars)}
 
@@ -42,7 +41,9 @@ def _build_sym_index(sequences: List[str],
 
     sym2index = {value: key for key, value in index2sym.items()}
 
-    return index2sym, sym2index
+    labels = [key for key in index2sym.keys() if key not in (pad_index, unk_index)]
+
+    return index2sym, sym2index, labels
 
 
 class SymTokenizer:
@@ -61,6 +62,8 @@ class SymTokenizer:
         self._index2sym = None
         self._sym2index = None
 
+        self.meaningful_label_indices = None
+
         self._vocab_flag = False
 
     def build_vocab(self,
@@ -69,7 +72,9 @@ class SymTokenizer:
         if self.convert_to_bmes:
             sequences = [_sequence2bmes(sequence) for sequence in sequences]
 
-        self._index2sym, self._sym2index = _build_sym_index(sequences, self.pad_index, self.unk_index)
+        self._index2sym, self._sym2index, self.meaningful_label_indices = _build_sym_index(sequences,
+                                                                                           self.pad_index,
+                                                                                           self.unk_index)
 
         self._vocab_flag = True
 
