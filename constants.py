@@ -10,3 +10,10 @@ CONVERTED_LEMMAS_PATHS = {"train": "data/converted_lemmas/lemmas_train.jsonl",
 PAD_INDEX = 0
 UNK_INDEX = 1
 MAX_LEN = 36
+
+MODELS_MAP = {"lstm": None,
+              "lstm_crf": None,
+              "cnn": None,
+              "cnn_crf": None,
+              "transformer": None,
+              "transformer_crf": None}
