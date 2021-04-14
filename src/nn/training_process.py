@@ -166,8 +166,3 @@ def training_cycle(model,
         #     }
         #
         #     file_object.write(json.dumps(info, indent=2))
-
-
-# TODO Implement error analysis
-def testing_cycle(model, test_loader, device, metrics, verbose):
-    pass

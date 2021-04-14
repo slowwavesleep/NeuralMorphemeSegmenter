@@ -310,13 +310,13 @@ class RandomTagger(nn.Module):
         self.labels = labels
         self.seed = seed
 
-    def compute_outputs(self, sequences):
+    def compute_outputs(self, sequences: Tensor):
         pass
 
-    def forward(self, sequences, labels):
+    def forward(self, sequences: Tensor, labels: Tensor):
         pass
 
-    def predict(self, sequences):
+    def predict(self, sequences: Tensor) -> np.ndarray:
         size = tuple(sequences.size())
         with self.temp_seed(self.seed):
             predicted = np.random.choice(a=self.labels, size=size)

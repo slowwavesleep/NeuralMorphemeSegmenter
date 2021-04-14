@@ -8,14 +8,16 @@ from constants import UNK_INDEX, PAD_INDEX, CONVERTED_LEMMAS_PATHS, MAX_LEN
 from src.utils.etc import read_converted_lemmas
 from src.utils.tokenizers import SymTokenizer, bmes2sequence
 from src.utils.datasets import BmesSegmentationDataset
-from src.nn.training_process import training_cycle, testing_cycle
-from src.nn.models import LstmCrfTagger, LstmTagger, CnnTagger
+from src.nn.training_process import training_cycle
+from src.nn.models import LstmCrfTagger, LstmTagger, CnnTagger, RandomTagger
 from src.nn.layers import CnnEncoder
+from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 
 train_indices, train_original, train_segmented = read_converted_lemmas(CONVERTED_LEMMAS_PATHS["train"])
 valid_indices, valid_original, valid_segmented = read_converted_lemmas(CONVERTED_LEMMAS_PATHS["valid"])
 test_indices, test_original, test_segmented = read_converted_lemmas(CONVERTED_LEMMAS_PATHS["test"])
 
+# TODO refactor tokenizers
 train_ds = BmesSegmentationDataset(indices=train_indices,
                                    original=train_original,
                                    segmented=train_segmented,
@@ -43,7 +45,7 @@ test_ds = BmesSegmentationDataset(indices=test_indices,
 HIDDEN_SIZE = 256
 EMB_DIM = 32
 SPATIAL_DROPOUT = 0.1
-EPOCHS = 10
+EPOCHS = 2
 CLIP = 40.
 
 # enc = LstmTagger(char_vocab_size=train_ds.original_tokenizer.vocab_size,
@@ -91,41 +93,13 @@ if True:
                             "recall": partial(recall_score, average="weighted")},
                    epochs=EPOCHS)
 
-scores = []
+# segmenter = RandomSegmenter(original_tokenizer=train_ds.bmes_tokenizer,
+#                             bmes_tokenizer=train_ds.bmes_tokenizer,
+#                             labels=train_ds.bmes_tokenizer.meaningful_label_indices)
 
-ex_scores = []
+segmenter = NeuralSegmenter(original_tokenizer=train_ds.bmes_tokenizer,
+                            bmes_tokenizer=train_ds.bmes_tokenizer,
+                            model=enc,
+                            device=device,
+                            seed=1)
 
-# for x, y, true_lens, _ in valid_loader:
-#     print(enc(x.to(device)).size())
-#     break
-
-
-for x, y, true_lens, _ in valid_loader:
-    preds = enc.predict(x.to(device))
-    x = x.cpu().numpy()
-    for ex, pred, tr in zip(x, preds, true_lens):
-        # pass
-        print(bmes2sequence(valid_ds.original_tokenizer.decode(ex[:tr]), valid_ds.bmes_tokenizer.decode(pred[:tr])))
-        # print(valid_ds.original_tokenizer.decode(ex))
-        # print(valid_ds.bmes_tokenizer.decode(pred))
-    break
-
-    # y = y.cpu().numpy()
-
-    # scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
-    # ex_scores.append(evaluate_examplewise_accuracy(y, preds, true_lens))
-
-# print(np.mean(scores))
-# print(np.mean(ex_scores))
-
-# random_tagger = RandomTagger(seed=100,
-#                              labels=train_ds.bmes_tokenizer.meaningful_label_indices)
-#
-# for x, y, true_lens in valid_loader:
-#     preds = random_tagger.predict(x)
-#     y = y.cpu().numpy()
-#     scores.append(evaluate_tokenwise_metric(y, preds, true_lens, partial(f1_score, average="weighted")))
-#     ex_scores.append(evaluate_examplewise_accuracy(y, preds, true_lens))
-#
-# print(np.mean(scores))
-# print(np.mean(ex_scores))
