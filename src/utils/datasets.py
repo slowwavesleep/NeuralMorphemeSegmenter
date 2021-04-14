@@ -3,6 +3,8 @@ from typing import List, Tuple, Optional
 from torch.utils.data import Dataset
 from torch import Tensor
 
+from src.utils.tokenizers import SymTokenizer
+
 
 class BmesSegmentationDataset(Dataset):
 
@@ -11,11 +13,11 @@ class BmesSegmentationDataset(Dataset):
                  indices: List[int],
                  original: List[str],
                  segmented: List[str],
-                 sym_tokenizer,
+                 original_tokenizer: SymTokenizer,
+                 bmes_tokenizer: SymTokenizer,
                  pad_index: int,
                  unk_index: int,
-                 max_len: Optional[int] = None,
-                 convert_to_bmes: Optional[bool] = True):
+                 max_len: int):
         self.indices = indices
         self.original = original
         self.segmented = segmented
@@ -30,12 +32,8 @@ class BmesSegmentationDataset(Dataset):
         self.index2char = None
         self.char2index = None
 
-        self.original_tokenizer = sym_tokenizer(pad_index=self.pad_index,
-                                                unk_index=self.unk_index).build_vocab(original)
-
-        self.bmes_tokenizer = sym_tokenizer(pad_index=self.pad_index,
-                                            unk_index=self.unk_index,
-                                            convert_to_bmes=convert_to_bmes).build_vocab(segmented)
+        self.original_tokenizer = original_tokenizer
+        self.bmes_tokenizer = bmes_tokenizer
 
     def __len__(self) -> int:
         return len(self.original)
