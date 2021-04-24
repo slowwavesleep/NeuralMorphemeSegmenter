@@ -30,7 +30,8 @@ def remove_sep(segmented_form: str, *, sep: str = SEP_TOKEN) -> str:
 def process_forms(data: Dict[str, str]) -> List[Tuple[str, str]]:
     result = []
     for value in data.values():
-        original = remove_sep(value, sep=SEP_TOKEN).lower()
-        segmented = value.lower()
-        result.append((original, segmented))
+        if value:
+            original = remove_sep(value, sep=SEP_TOKEN).lower()
+            segmented = value.lower()
+            result.append((original, segmented))
     return result

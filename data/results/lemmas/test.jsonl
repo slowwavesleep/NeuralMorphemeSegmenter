@@ -3558,7 +3558,7 @@
 {"index": 3558, "original": "обуглероживание", "segmented": "BEBMMMMMEBMEBES", "predicted": "BMMMMMMMMMMMMME"}
 {"index": 3559, "original": "пятидесятилетний", "segmented": "BMESBMMMESBMESBE", "predicted": "BMMMMMMMMMMMMMME"}
 {"index": 3560, "original": "перемокать", "segmented": "BMMEBMESBE", "predicted": "BMMMMMMMME"}
-{"index": 3561, "original": "юс", "segmented": "BE", "predicted": "BM"}
+{"index": 3561, "original": "юс", "segmented": "BE", "predicted": "BE"}
 {"index": 3562, "original": "пятитонный", "segmented": "BMESBMESBE", "predicted": "BMMMMMMMME"}
 {"index": 3563, "original": "подкуриваться", "segmented": "BMEBMEBMEBEBE", "predicted": "BMMMMMMMMMMME"}
 {"index": 3564, "original": "бронзировать", "segmented": "BMMMEBEBMEBE", "predicted": "BMMMMMMMMMME"}
@@ -6355,7 +6355,7 @@
 {"index": 6355, "original": "ожидать", "segmented": "SBMESBE", "predicted": "BMMMMME"}
 {"index": 6356, "original": "политотдел", "segmented": "BMMMEBEBME", "predicted": "BMMMMMMMME"}
 {"index": 6357, "original": "шаржировка", "segmented": "BMMEBEBESS", "predicted": "BMMMMMMMME"}
-{"index": 6358, "original": "то", "segmented": "SS", "predicted": "BM"}
+{"index": 6358, "original": "то", "segmented": "SS", "predicted": "BE"}
 {"index": 6359, "original": "сообщнический", "segmented": "BEBMEBMEBMEBE", "predicted": "BMMMMMMMMMMME"}
 {"index": 6360, "original": "потребность", "segmented": "BEBMMESBMME", "predicted": "BMMMMMMMMME"}
 {"index": 6361, "original": "пожелтелый", "segmented": "BEBMMESSBE", "predicted": "BMMMMMMMME"}
@@ -7387,7 +7387,7 @@
 {"index": 7387, "original": "декабрист", "segmented": "BMMMMEBME", "predicted": "BMMMMMMME"}
 {"index": 7388, "original": "распланировка", "segmented": "BMEBMMEBEBESS", "predicted": "BMMMMMMMMMMME"}
 {"index": 7389, "original": "лицемерный", "segmented": "BMMMMMESBE", "predicted": "BMMMMMMMME"}
-{"index": 7390, "original": "ил", "segmented": "BE", "predicted": "BM"}
+{"index": 7390, "original": "ил", "segmented": "BE", "predicted": "BE"}
 {"index": 7391, "original": "отравный", "segmented": "SBMMESBE", "predicted": "BMMMMMME"}
 {"index": 7392, "original": "сватьин", "segmented": "BMMMEBE", "predicted": "BMMMMME"}
 {"index": 7393, "original": "рок-опера", "segmented": "BMESBMMES", "predicted": "BMMMMMMME"}

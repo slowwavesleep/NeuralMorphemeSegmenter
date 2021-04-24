@@ -168,9 +168,8 @@ class LstmTagger(nn.Module):
         encoder_seq, memory = self.encoder(sequences)
         encoder_out = self.fc(encoder_seq)
 
-        pad_mask = (sequences == self.padding_index).float()
-
-        encoder_out[:, :, self.padding_index] += pad_mask * 10000
+        # pad_mask = (sequences == self.padding_index).float()
+        # encoder_out[:, :, self.padding_index] += pad_mask * 10000
 
         return encoder_out
 

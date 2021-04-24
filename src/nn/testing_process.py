@@ -21,6 +21,7 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
                   device: object,
                   pad_index: int,
                   unk_index: int,
+                  batch_size: int,
                   max_len: Optional[int] = None):
     if not max_len:
         max_len = max([len(example)] for example in original)
@@ -32,9 +33,10 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
                                    bmes_tokenizer=bmes_tokenizer,
                                    pad_index=pad_index,
                                    unk_index=unk_index,
-                                   max_len=max_len)
+                                   max_len=max_len,
+                                   batch_size=batch_size)
 
-    data_loader = DataLoader(data, batch_size=512)
+    data_loader = DataLoader(data, batch_size=1)
 
     _, overall_scores, _ = evaluate(model=segmenter.tagger,
                                     loader=data_loader,

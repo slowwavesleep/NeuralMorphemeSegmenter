@@ -24,11 +24,15 @@ def train(model: Module,
 
     model.train()
 
-    for encoder_seq, target_seq, true_lens, _ in loader:
-        encoder_seq = encoder_seq.to(device)
-        target_seq = target_seq.to(device)
+    for index_seq, encoder_seq, target_seq, true_lens in loader:
+        index_seq = index_seq.squeeze(0)
+        encoder_seq = encoder_seq.to(device).squeeze(0)
+        target_seq = target_seq.to(device).squeeze(0)
+        true_lens = true_lens.squeeze(0)
 
-        loss = model(encoder_seq, target_seq)
+        batch_size = encoder_seq.size(0)
+        avg_tokens = torch.sum(true_lens) / batch_size
+        loss = model(encoder_seq, target_seq) / avg_tokens
 
         optimizer.zero_grad()
         loss.backward()
@@ -60,9 +64,11 @@ def evaluate(model: Module,
 
     model.eval()
 
-    for encoder_seq, target_seq, true_lens, indices in loader:
-        encoder_seq = encoder_seq.to(device)
-        target_seq = target_seq.to(device)
+    for index_seq, encoder_seq, target_seq, true_lens in loader:
+        index_seq = index_seq.squeeze(0)
+        encoder_seq = encoder_seq.to(device).squeeze(0)
+        target_seq = target_seq.to(device).squeeze(0)
+        true_lens = true_lens.squeeze(0)
 
         with torch.no_grad():
             loss = model(encoder_seq, target_seq)

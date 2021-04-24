@@ -15,8 +15,17 @@ from src.nn.layers import CnnEncoder
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
+# TODO 1) fix metrics
+
 TRAIN_MODEL = True
 TEST_MODEL = True
+
+BATCH_SIZE = 512
+HIDDEN_SIZE = 256
+EMB_DIM = 32
+SPATIAL_DROPOUT = 0.1
+EPOCHS = 5
+CLIP = 30.
 
 # RESULTS_PATH = "data/results/lemmas/"
 # train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
@@ -43,7 +52,8 @@ train_ds = BmesSegmentationDataset(indices=train_indices,
                                    bmes_tokenizer=bmes_tokenizer,
                                    pad_index=PAD_INDEX,
                                    unk_index=UNK_INDEX,
-                                   max_len=MAX_LEN)
+                                   max_len=MAX_LEN,
+                                   batch_size=BATCH_SIZE)
 
 valid_ds = BmesSegmentationDataset(indices=valid_indices,
                                    original=valid_original,
@@ -52,29 +62,24 @@ valid_ds = BmesSegmentationDataset(indices=valid_indices,
                                    bmes_tokenizer=bmes_tokenizer,
                                    pad_index=PAD_INDEX,
                                    unk_index=UNK_INDEX,
-                                   max_len=MAX_LEN)
+                                   max_len=MAX_LEN,
+                                   batch_size=BATCH_SIZE)
 
-HIDDEN_SIZE = 256
-EMB_DIM = 32
-SPATIAL_DROPOUT = 0.1
-EPOCHS = 2
-CLIP = 40.
+# enc = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
+#                  tag_vocab_size=bmes_tokenizer.vocab_size,
+#                  emb_dim=EMB_DIM,
+#                  hidden_size=HIDDEN_SIZE,
+#                  spatial_dropout=SPATIAL_DROPOUT,
+#                  bidirectional=True,
+#                  padding_index=PAD_INDEX)
 
-enc = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
-                 tag_vocab_size=bmes_tokenizer.vocab_size,
-                 emb_dim=EMB_DIM,
-                 hidden_size=HIDDEN_SIZE,
-                 spatial_dropout=SPATIAL_DROPOUT,
-                 bidirectional=True,
-                 padding_index=PAD_INDEX)
-
-# enc = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
-#                     tag_vocab_size=bmes_tokenizer.vocab_size,
-#                     emb_dim=EMB_DIM,
-#                     hidden_size=HIDDEN_SIZE,
-#                     spatial_dropout=SPATIAL_DROPOUT,
-#                     bidirectional=True,
-#                     padding_index=PAD_INDEX)
+enc = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
+                    tag_vocab_size=bmes_tokenizer.vocab_size,
+                    emb_dim=EMB_DIM,
+                    hidden_size=HIDDEN_SIZE,
+                    spatial_dropout=SPATIAL_DROPOUT,
+                    bidirectional=True,
+                    padding_index=PAD_INDEX)
 
 # enc = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
 #                 tag_vocab_size=bmes_tokenizer.vocab_size,
@@ -83,8 +88,9 @@ enc = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
 #                 kernel_size=3,
 #                 padding_index=PAD_INDEX)
 
-train_loader = DataLoader(train_ds, batch_size=512, shuffle=True)
-valid_loader = DataLoader(valid_ds, batch_size=512)
+train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
+valid_loader = DataLoader(valid_ds, batch_size=1)
+
 
 optimizer = torch.optim.Adam(params=enc.parameters())
 device = torch.device('cuda')
@@ -128,5 +134,6 @@ if TEST_MODEL:
                   device=device,
                   pad_index=PAD_INDEX,
                   unk_index=UNK_INDEX,
-                  max_len=MAX_LEN)
+                  max_len=MAX_LEN,
+                  batch_size=BATCH_SIZE)
 
