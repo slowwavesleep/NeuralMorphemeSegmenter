@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from src.utils.datasets import BmesSegmentationDataset
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.nn.training_process import evaluate
+from src.utils.tokenizers import sequence2bmes
 
 
 def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
@@ -57,17 +58,22 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
     file_path.mkdir(parents=True, exist_ok=True)
     file_path = file_path / "test.jsonl"
 
-    predicted_segmentation = segmenter.segment_batch(original)
+    # predicted_segmentation = segmenter.tag_batch(original)
     with open(file_path, "w") as file:
-        for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
+    #     for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
+        count = 0
+        total = 0
+        for index, example, target in zip(indices, original, segmented):
 
+            count += sequence2bmes(target) == segmenter.tag_example(example)
+            total += 1
             output = {"index": index,
                       "original": example,
-                      "segmented": target,
-                      "predicted": prediction,
-                      "match": target == prediction}
+                      "segmented": sequence2bmes(target),
+                      "predicted": segmenter.tag_example(example)}
 
             file.write(json.dumps(output, ensure_ascii=False) + "\n")
+    print(count / total)
 
 
 

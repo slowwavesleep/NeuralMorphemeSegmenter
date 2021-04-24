@@ -160,7 +160,6 @@ class LstmTagger(nn.Module):
         self.fc = nn.Linear(in_features=hidden_size * self.directions,
                             out_features=tag_vocab_size)
 
-        # ignore pads when calculating loss
         self.loss = torch.nn.CrossEntropyLoss(
             ignore_index=self.padding_index,
             reduction='sum')

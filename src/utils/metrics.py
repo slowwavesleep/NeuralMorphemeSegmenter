@@ -37,9 +37,9 @@ def evaluate_batch(y_true, y_pred, metrics: dict, batch_scores: defaultdict, tru
                                                     scoring_fn=func)
         batch_scores[f"tokenwise_{name}"].append(tokenwise_score)
 
-        examplewise_accuracy_score = evaluate_examplewise_accuracy(y_true=y_true.cpu().numpy(),
-                                                                   y_pred=y_pred,
-                                                                   true_lengths=true_lengths)
-        batch_scores["example-wise_accuracy"].append(examplewise_accuracy_score)
+    examplewise_accuracy_score = evaluate_examplewise_accuracy(y_true=y_true.cpu().numpy(),
+                                                               y_pred=y_pred,
+                                                               true_lengths=true_lengths)
+    batch_scores["example-wise_accuracy"].append(examplewise_accuracy_score)
 
     return batch_scores

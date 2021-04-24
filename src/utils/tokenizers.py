@@ -14,7 +14,7 @@ def bmes2sequence(original_sequence: str, bmes_tags: str, *, sep: str = "|") -> 
     return "".join(output)
 
 
-def _sequence2bmes(segmented_sequence: str, *, sep: str = "|") -> str:
+def sequence2bmes(segmented_sequence: str, *, sep: str = "|") -> str:
     segments = segmented_sequence.split(sep)
     result = []
     for segment in segments:
@@ -83,7 +83,7 @@ class SymTokenizer:
                     sequences: List[str]):
 
         if self.convert_to_bmes:
-            sequences = [_sequence2bmes(sequence) for sequence in sequences]
+            sequences = [sequence2bmes(sequence) for sequence in sequences]
 
         self._index2sym, self._sym2index, self.meaningful_label_indices = _build_sym_index(sequences,
                                                                                            self.pad_index,
@@ -108,7 +108,7 @@ class SymTokenizer:
         if not self._vocab_flag:
             raise RuntimeError("Tokenizer vocabulary has not been initialized!")
         if self.convert_to_bmes:
-            sequence = _sequence2bmes(sequence)
+            sequence = sequence2bmes(sequence)
         return [self._sym2index.get(element, self.unk_index) for element in sequence]
 
     def decode(self, sequence: List[int]) -> str:
