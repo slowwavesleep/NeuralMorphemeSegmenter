@@ -15,17 +15,17 @@ from src.nn.layers import CnnEncoder
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
-# TODO 1) fix metrics
+# TODO 1) fix metrics 2) save models
 
 TRAIN_MODEL = True
 TEST_MODEL = True
 
-BATCH_SIZE = 512
-HIDDEN_SIZE = 256
+BATCH_SIZE = 256
+HIDDEN_SIZE = 1024
 EMB_DIM = 32
 SPATIAL_DROPOUT = 0.1
 EPOCHS = 5
-CLIP = 30.
+CLIP = 5.
 
 # RESULTS_PATH = "data/results/lemmas/"
 # train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
@@ -65,21 +65,21 @@ valid_ds = BmesSegmentationDataset(indices=valid_indices,
                                    max_len=MAX_LEN,
                                    batch_size=BATCH_SIZE)
 
-# enc = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
-#                  tag_vocab_size=bmes_tokenizer.vocab_size,
-#                  emb_dim=EMB_DIM,
-#                  hidden_size=HIDDEN_SIZE,
-#                  spatial_dropout=SPATIAL_DROPOUT,
-#                  bidirectional=True,
-#                  padding_index=PAD_INDEX)
+enc = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
+                 tag_vocab_size=bmes_tokenizer.vocab_size,
+                 emb_dim=EMB_DIM,
+                 hidden_size=HIDDEN_SIZE,
+                 spatial_dropout=SPATIAL_DROPOUT,
+                 bidirectional=True,
+                 padding_index=PAD_INDEX)
 
-enc = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
-                    tag_vocab_size=bmes_tokenizer.vocab_size,
-                    emb_dim=EMB_DIM,
-                    hidden_size=HIDDEN_SIZE,
-                    spatial_dropout=SPATIAL_DROPOUT,
-                    bidirectional=True,
-                    padding_index=PAD_INDEX)
+# enc = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
+#                     tag_vocab_size=bmes_tokenizer.vocab_size,
+#                     emb_dim=EMB_DIM,
+#                     hidden_size=HIDDEN_SIZE,
+#                     spatial_dropout=SPATIAL_DROPOUT,
+#                     bidirectional=True,
+#                     padding_index=PAD_INDEX)
 
 # enc = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
 #                 tag_vocab_size=bmes_tokenizer.vocab_size,
@@ -116,11 +116,23 @@ if TRAIN_MODEL:
 #                             bmes_tokenizer=bmes_tokenizer,
 #                             labels=bmes_tokenizer.meaningful_label_indices)
 
-segmenter = NeuralSegmenter(original_tokenizer=train_ds.bmes_tokenizer,
-                            bmes_tokenizer=train_ds.bmes_tokenizer,
+segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
+                            bmes_tokenizer=bmes_tokenizer,
                             model=enc,
                             device=device,
                             seed=1)
+
+# for indices, x, y, lens in valid_loader:
+#     print(indices)
+#     print(x)
+#     print(y)
+#     print(lens)
+#     print(train_ds.original_tokenizer.decode(x.squeeze(0)[-1].detach().numpy()))
+#     print(valid_ds.original_tokenizer.decode(x.squeeze(0)[-1].detach().numpy()))
+#     print(train_ds.bmes_tokenizer.decode(y.squeeze(0)[-1].detach().numpy()))
+#     break
+
+
 
 if TEST_MODEL:
     testing_cycle(segmenter=segmenter,

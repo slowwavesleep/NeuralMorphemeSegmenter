@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
+import torch
 from torch import nn
 from torch import Tensor
 
@@ -48,6 +49,7 @@ class RandomSegmenter(AbstractSegmenter):
     def tag_example(self, example: str):
         encoded = self.original_tokenizer.encode(example)
         encoded = Tensor(encoded).long().unsqueeze(0)
+
         prediction = self.tagger.predict(encoded).squeeze(0).tolist()
         prediction = self.bmes_tokenizer.decode(prediction)
         return prediction
@@ -107,9 +109,12 @@ class NeuralSegmenter(AbstractSegmenter):
         self.sep = sep
 
     def tag_example(self, example):
+
+        true_length = torch.tensor(len(example)).long().to(self.device).unsqueeze(0)
+
         encoded = self.original_tokenizer.encode(example)
-        encoded = Tensor(encoded).long().unsqueeze(0).to(self.device)
-        prediction = self.tagger.predict(encoded).squeeze(0).tolist()
+        encoded = torch.tensor(encoded).long().unsqueeze(0).to(self.device)
+        prediction = self.tagger.predict(encoded, true_length).squeeze(0).tolist()
         prediction = self.bmes_tokenizer.decode(prediction)
         return prediction
 
@@ -120,6 +125,8 @@ class NeuralSegmenter(AbstractSegmenter):
 
     def tag_batch(self, example_batch: List[str]):
         true_lengths = [len(example) for example in example_batch]
+        true_lengths = torch.tensor(true_lengths).long().to(self.device).unsqueeze(0)
+
         max_length = max(true_lengths)
 
         processed_examples = []
@@ -129,8 +136,8 @@ class NeuralSegmenter(AbstractSegmenter):
             padded = self.original_tokenizer.pad_or_clip(encoded, max_len=max_length)
             processed_examples.append(padded)
 
-        processed_examples = Tensor(processed_examples).long().to(self.device)
-        predictions = self.tagger.predict(processed_examples).tolist()
+        processed_examples = torch.tensor(processed_examples).long().to(self.device)
+        predictions = self.tagger.predict(processed_examples, true_lengths).tolist()
 
         return predictions, true_lengths
 

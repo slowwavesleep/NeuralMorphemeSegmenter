@@ -83,10 +83,8 @@ class LstmEncoderPacked(LstmEncoder):
 
         self.bidirectional = bidirectional
 
-    def forward(self, encoder_seq):
+    def forward(self, encoder_seq: torch.tensor, true_lengths: torch.tensor):
         initial_len = encoder_seq.size(-1)
-
-        encoder_lens = get_non_pad_lens(encoder_seq)
 
         encoder_seq = self.embedding(encoder_seq)
 
@@ -95,7 +93,7 @@ class LstmEncoderPacked(LstmEncoder):
         encoder_seq = self.layer_norm(encoder_seq)
 
         encoder_seq = pack_padded_sequence(input=encoder_seq,
-                                           lengths=encoder_lens,
+                                           lengths=true_lengths,
                                            batch_first=True,
                                            enforce_sorted=False)
 
