@@ -40,9 +40,6 @@ class LstmTagger(nn.Module):
                                          bidirectional=bidirectional,
                                          padding_index=padding_index)
 
-        # self.fc = nn.Linear(in_features=hidden_size * self.directions,
-        #                     out_features=tag_vocab_size)
-
         self.fc_1 = nn.Linear(in_features=hidden_size * self.directions,
                               out_features=hidden_size)
         self.fc_2 = nn.Linear(in_features=hidden_size,

@@ -47,11 +47,11 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
     message = "\n" + "*" * 50 + "\n"
 
     message += "Statistics on test data:\n"
-    message += f"    examplewise_accuracy: {overall_scores['example-wise_accuracy']}\n"
+    message += f"    example_accuracy: {overall_scores['example_accuracy']:.6f}\n"
 
     for name, score in overall_scores.items():
-        if name != "example-wise_accuracy":
-            message += f"    {name}: {score}\n"
+        if name != "example_accuracy":
+            message += f"    {name}: {score:.6f}\n"
 
     message += "*" * 50
 
