@@ -23,23 +23,21 @@ def evaluate_example_accuracy(y_true, y_pred, true_lengths) -> float:
         total += 1
 
     if total:
-        return correct/total
+        return correct / total
     else:
         return 0.
 
 
 def evaluate_batch(y_true, y_pred, metrics: dict, batch_scores: defaultdict, true_lengths) -> defaultdict:
-
     for name, func in metrics.items():
         tokenwise_score = evaluate_tokenwise_metric(y_true=y_true.cpu().numpy(),
                                                     y_pred=y_pred,
                                                     true_lengths=true_lengths,
                                                     scoring_fn=func)
-        batch_scores[f"tokenwise_{name}"].append(tokenwise_score)
+        batch_scores[f"token-wise_{name}"].append(tokenwise_score)
 
-    examplewise_accuracy_score = evaluate_example_accuracy(y_true=y_true.cpu().numpy(),
-                                                           y_pred=y_pred,
-                                                           true_lengths=true_lengths)
-    batch_scores["example_accuracy"].append(examplewise_accuracy_score)
-
+    example_accuracy_score = evaluate_example_accuracy(y_true=y_true.cpu().numpy(),
+                                                       y_pred=y_pred,
+                                                       true_lengths=true_lengths)
+    batch_scores["example_accuracy"].append(example_accuracy_score)
     return batch_scores

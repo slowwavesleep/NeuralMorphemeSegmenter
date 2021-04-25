@@ -16,12 +16,13 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
                   segmented: List[str],
                   original_tokenizer,
                   bmes_tokenizer,
-                  write_path: str,
                   metrics: dict,
                   device: object,
                   pad_index: int,
                   unk_index: int,
                   batch_size: int,
+                  write_predictions: bool = False,
+                  write_path: Optional[str] = None,
                   max_len: Optional[int] = None):
     if not max_len:
         max_len = max([len(example)] for example in original)
@@ -61,22 +62,21 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
     file_path = file_path / "test.jsonl"
 
     # predicted_segmentation = segmenter.tag_batch(original)
-    with open(file_path, "w") as file:
-    #     for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
-        count = 0
-        total = 0
-        for index, example, target in zip(indices, original, segmented):
+    if write_predictions and write_path:
+        with open(file_path, "w") as file:
+        #     for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
+            for index, example, target in zip(indices, original, segmented):
+                output = {"index": index,
+                          "original": example,
+                          "segmented": sequence2bmes(target),
+                          "predicted": segmenter.tag_example(example),
+                          "correct": sequence2bmes(target) == segmenter.tag_example(example)}
 
-            count += sequence2bmes(target) == segmenter.tag_example(example)
-            total += 1
-            output = {"index": index,
-                      "original": example,
-                      "segmented": sequence2bmes(target),
-                      "predicted": segmenter.tag_example(example)}
-
-            file.write(json.dumps(output, ensure_ascii=False) + "\n")
-    print(count / total)
-
+                file.write(json.dumps(output, ensure_ascii=False) + "\n")
+    elif write_predictions and not write_path:
+        print("No write path was specified!")
+    else:
+        pass
 
 
 

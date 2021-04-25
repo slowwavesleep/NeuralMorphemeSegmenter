@@ -19,6 +19,8 @@ from src.utils.tokenizers import SymTokenizer
 
 TRAIN_MODEL = True
 TEST_MODEL = False
+WRITE_RESULTS = True
+N_WITHOUT_IMPROVEMENTS = 4
 
 BATCH_SIZE = 1024
 HIDDEN_SIZE = 512
@@ -110,7 +112,8 @@ if TRAIN_MODEL:
                    device=device,
                    clip=CLIP,
                    metrics=metrics,
-                   epochs=EPOCHS)
+                   epochs=EPOCHS,
+                   n_without_improvements=N_WITHOUT_IMPROVEMENTS)
 
 # segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
 #                             bmes_tokenizer=bmes_tokenizer,
@@ -122,18 +125,6 @@ segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
                             device=device,
                             seed=1)
 
-# for indices, x, y, lens in valid_loader:
-#     print(indices)
-#     print(x)
-#     print(y)
-#     print(lens)
-#     print(train_ds.original_tokenizer.decode(x.squeeze(0)[-1].detach().numpy()))
-#     print(valid_ds.original_tokenizer.decode(x.squeeze(0)[-1].detach().numpy()))
-#     print(train_ds.bmes_tokenizer.decode(y.squeeze(0)[-1].detach().numpy()))
-#     break
-
-
-
 if TEST_MODEL:
     testing_cycle(segmenter=segmenter,
                   indices=test_indices,
@@ -141,6 +132,7 @@ if TEST_MODEL:
                   segmented=test_segmented,
                   original_tokenizer=original_tokenizer,
                   bmes_tokenizer=bmes_tokenizer,
+                  write_predictions=WRITE_RESULTS,
                   write_path=RESULTS_PATH,
                   metrics=metrics,
                   device=device,
