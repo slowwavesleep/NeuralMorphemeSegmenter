@@ -9,7 +9,7 @@ from torchcrf import CRF
 import numpy as np
 
 from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, get_pad_mask, SpatialDropout, \
-    CnnEncoder
+    CnnEncoder, TransformerEncoder
 
 
 class LstmTagger(nn.Module):
@@ -235,3 +235,60 @@ class RandomTagger(nn.Module):
             yield
         finally:
             np.random.set_state(state)
+
+
+class TransformerTagger(nn.Module):
+
+    def __init__(self,
+                 char_vocab_size,
+                 tag_vocab_size,
+                 emb_dim,
+                 n_heads,
+                 fw_dim,
+                 dropout,
+                 padding_index):
+        super(TransformerTagger, self).__init__()
+
+        self.tag_vocab_size = tag_vocab_size
+        self.padding_index = padding_index
+
+        self.transformer_encoder = TransformerEncoder(vocab_size=char_vocab_size,
+                                                      emb_dim=emb_dim,
+                                                      n_heads=n_heads,
+                                                      fw_dim=fw_dim,
+                                                      dropout=dropout,
+                                                      padding_index=self.padding_index)
+
+        self.fc = nn.Linear(in_features=fw_dim,
+                            out_features=tag_vocab_size)
+
+        self.loss = torch.nn.CrossEntropyLoss(
+            ignore_index=self.padding_index,
+            reduction='sum')
+
+    def compute_outputs(self, sequences, true_lengths):
+
+        sequences = self.transformer_encoder(sequences)
+        sequences = self.fc(sequences)
+
+        return sequences
+
+    def forward(self, sequences, labels, true_lengths):
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        scores = scores.view(-1, self.tag_vocab_size)
+        labels = labels.view(-1)
+
+        return self.loss(scores, labels)
+
+    def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
+        if true_lengths is None:
+            print("True lengths of sequences not specified!")
+            true_lengths = [sequences.size(1)] * sequences.size(0)
+            true_lengths = torch.tensor(true_lengths).long()
+
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        predicted = scores.argmax(dim=2)
+
+        return predicted.cpu().numpy()

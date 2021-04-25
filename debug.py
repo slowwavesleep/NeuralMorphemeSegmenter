@@ -12,7 +12,7 @@ from src.utils.tokenizers import SymTokenizer, bmes2sequence
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
 from src.nn.testing_process import testing_cycle
-from src.nn.models import LstmCrfTagger, LstmTagger, CnnTagger, RandomTagger
+from src.nn.models import CnnTagger, RandomTagger
 from src.nn.layers import CnnEncoder
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
@@ -25,11 +25,12 @@ from src.utils.tokenizers import SymTokenizer
 
 
 TRAIN_MODEL = True
-TEST_MODEL = True
+TEST_MODEL = False
 WRITE_RESULTS = False
 N_WITHOUT_IMPROVEMENTS = 4
 TRAIN_TYPE = "lemmas"
 MODEL_NAME = "LstmTagger"
+# MODEL_NAME = "TransformerTagger"
 
 BATCH_SIZE = 128
 HIDDEN_SIZE = 512
@@ -41,9 +42,9 @@ LSTM_LAYERS = 3
 LAYER_DROPOUT = 0.3
 BIDIRECTIONAL = True
 
-
 if TRAIN_TYPE == "lemmas":
     from constants import CONVERTED_LEMMAS_PATHS
+
     RESULTS_PATH = "data/results/lemmas/"
     train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
     valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["valid"])
@@ -51,6 +52,7 @@ if TRAIN_TYPE == "lemmas":
 
 elif TRAIN_TYPE == "forms":
     from constants import CONVERTED_FORMS_PATHS
+
     RESULTS_PATH = "data/results/forms/"
     train_indices, train_original, train_segmented = read_converted_data(CONVERTED_FORMS_PATHS["train"])
     valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_FORMS_PATHS["valid"])
@@ -87,7 +89,7 @@ valid_ds = BmesSegmentationDataset(indices=valid_indices,
                                    batch_size=BATCH_SIZE)
 
 if MODEL_NAME == "LstmTagger":
-
+    from src.nn.models import LstmTagger
     enc = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
                      tag_vocab_size=bmes_tokenizer.vocab_size,
                      emb_dim=EMB_DIM,
@@ -97,18 +99,34 @@ if MODEL_NAME == "LstmTagger":
                      padding_index=PAD_INDEX,
                      lstm_layers=LSTM_LAYERS,
                      layer_dropout=LAYER_DROPOUT)
+
+elif MODEL_NAME == "TransformerTagger":
+    from src.nn.models import TransformerTagger
+    enc = TransformerTagger(char_vocab_size=original_tokenizer.vocab_size,
+                            tag_vocab_size=bmes_tokenizer.vocab_size,
+                            emb_dim=EMB_DIM,
+                            n_heads=1,
+                            fw_dim=256,
+                            dropout=0.3,
+                            padding_index=PAD_INDEX)
+
+elif MODEL_NAME == "LstmCrfTagger":
+    from src.nn.models import LstmCrfTagger
+    enc = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
+                        tag_vocab_size=bmes_tokenizer.vocab_size,
+                        emb_dim=EMB_DIM,
+                        hidden_size=HIDDEN_SIZE,
+                        spatial_dropout=SPATIAL_DROPOUT,
+                        bidirectional=True,
+                        padding_index=PAD_INDEX)
+
 elif MODEL_NAME == "RandomTagger":
     enc = None
+
 else:
     raise Exception
 
-# enc = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
-#                     tag_vocab_size=bmes_tokenizer.vocab_size,
-#                     emb_dim=EMB_DIM,
-#                     hidden_size=HIDDEN_SIZE,
-#                     spatial_dropout=SPATIAL_DROPOUT,
-#                     bidirectional=True,
-#                     padding_index=PAD_INDEX)
+
 
 # enc = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
 #                 tag_vocab_size=bmes_tokenizer.vocab_size,
@@ -120,6 +138,11 @@ else:
 train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
 valid_loader = DataLoader(valid_ds, batch_size=1)
 
+# for a, b, c, d in train_loader:
+#     print(b.size())
+#     out = enc(b.squeeze(0), c.squeeze(0))
+#     print(out)
+#     break
 
 optimizer = torch.optim.Adam(params=enc.parameters())
 device = torch.device('cuda')
@@ -167,4 +190,3 @@ if TEST_MODEL:
                   unk_index=UNK_INDEX,
                   max_len=MAX_LEN,
                   batch_size=BATCH_SIZE)
-

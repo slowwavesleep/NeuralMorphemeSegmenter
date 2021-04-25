@@ -243,6 +243,33 @@ class CnnEncoder(nn.Module):
         return x
 
 
+class TransformerEncoder(nn.Module):
+
+    def __init__(self,
+                 vocab_size,
+                 emb_dim,
+                 n_heads,
+                 fw_dim,
+                 dropout,
+                 padding_index):
+        super(TransformerEncoder, self).__init__()
+
+        self.embedding = nn.Embedding(num_embeddings=vocab_size,
+                                      embedding_dim=emb_dim,
+                                      padding_idx=padding_index)
+
+        self.transformer_encoder = nn.TransformerEncoderLayer(d_model=emb_dim,
+                                                              nhead=n_heads,
+                                                              dim_feedforward=fw_dim,
+                                                              dropout=dropout)
+
+    def forward(self, x):
+        x = self.embedding(x)
+        x = self.transformer_encoder(x)
+
+        return x
+
+
 def get_pad_mask(seq_1, seq_2):
     # (batch_size, seq_len_1), (batch_size, seq_len_2)  -> (batch_size, seq_len_2, seq_len_1)
     seq_len_1 = seq_1.size(-1)
