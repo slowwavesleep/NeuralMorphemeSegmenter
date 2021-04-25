@@ -18,24 +18,24 @@ from src.utils.tokenizers import SymTokenizer
 # TODO 1) fix metrics 2) save models
 
 TRAIN_MODEL = True
-TEST_MODEL = True
+TEST_MODEL = False
 
-BATCH_SIZE = 256
-HIDDEN_SIZE = 1024
-EMB_DIM = 32
-SPATIAL_DROPOUT = 0.1
-EPOCHS = 5
-CLIP = 5.
+BATCH_SIZE = 1024
+HIDDEN_SIZE = 512
+EMB_DIM = 512
+SPATIAL_DROPOUT = 0.3
+EPOCHS = 1
+CLIP = 3.
 
-# RESULTS_PATH = "data/results/lemmas/"
-# train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
-# valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["valid"])
-# test_indices, test_original, test_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["test"])
+RESULTS_PATH = "data/results/lemmas/"
+train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
+valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["valid"])
+test_indices, test_original, test_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["test"])
 
-RESULTS_PATH = "data/results/forms/"
-train_indices, train_original, train_segmented = read_converted_data(CONVERTED_FORMS_PATHS["train"])
-valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_FORMS_PATHS["valid"])
-test_indices, test_original, test_segmented = read_converted_data(CONVERTED_FORMS_PATHS["test"])
+# RESULTS_PATH = "data/results/forms/"
+# train_indices, train_original, train_segmented = read_converted_data(CONVERTED_FORMS_PATHS["train"])
+# valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_FORMS_PATHS["valid"])
+# test_indices, test_original, test_segmented = read_converted_data(CONVERTED_FORMS_PATHS["test"])
 
 
 original_tokenizer = SymTokenizer(pad_index=PAD_INDEX,

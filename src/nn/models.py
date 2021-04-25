@@ -40,8 +40,17 @@ class LstmTagger(nn.Module):
                                          bidirectional=bidirectional,
                                          padding_index=padding_index)
 
-        self.fc = nn.Linear(in_features=hidden_size * self.directions,
-                            out_features=tag_vocab_size)
+        # self.fc = nn.Linear(in_features=hidden_size * self.directions,
+        #                     out_features=tag_vocab_size)
+
+        self.fc_1 = nn.Linear(in_features=hidden_size * self.directions,
+                              out_features=hidden_size)
+        self.fc_2 = nn.Linear(in_features=hidden_size,
+                              out_features=tag_vocab_size)
+
+        self.layer_norm = nn.LayerNorm(hidden_size * self.directions)
+
+        self.spatial_dropout = SpatialDropout(p=spatial_dropout)
 
         self.loss = torch.nn.CrossEntropyLoss(
             ignore_index=self.padding_index,
@@ -49,7 +58,12 @@ class LstmTagger(nn.Module):
 
     def compute_outputs(self, sequences, true_lengths):
         encoder_seq, memory = self.encoder(sequences, true_lengths)
-        encoder_out = self.fc(encoder_seq)
+        encoder_seq = self.spatial_dropout(encoder_seq)
+        encoder_seq = self.layer_norm(encoder_seq)
+        encoder_out = self.fc_1(encoder_seq)
+        encoder_out = torch.relu(encoder_out)
+        encoder_out = self.fc_2(encoder_out)
+        encoder_out = torch.relu(encoder_out)
 
         return encoder_out
 
@@ -64,7 +78,9 @@ class LstmTagger(nn.Module):
         loss = self.loss(scores, labels)
         loss = loss.view(sequences.size(0), sequences.size(1))
         loss *= pad_mask
-        loss = torch.mean(torch.sum(loss, axis=1))
+        loss = torch.sum(loss, axis=1)
+        loss /= true_lengths
+        loss = torch.mean(loss)
 
         return loss
 

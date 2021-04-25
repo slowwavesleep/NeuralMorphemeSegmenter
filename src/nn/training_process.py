@@ -28,7 +28,7 @@ def train(model: Module,
         index_seq = index_seq.squeeze(0)
         encoder_seq = encoder_seq.to(device).squeeze(0)
         target_seq = target_seq.to(device).squeeze(0)
-        true_lens = true_lens.squeeze(0)
+        true_lens = true_lens.to(device).squeeze(0)
 
         loss = model(encoder_seq, target_seq, true_lens)
         # loss = loss.view(encoder_seq.size(0), encoder_seq.size(1))
@@ -68,7 +68,7 @@ def evaluate(model: Module,
         index_seq = index_seq.squeeze(0)
         encoder_seq = encoder_seq.to(device).squeeze(0)
         target_seq = target_seq.to(device).squeeze(0)
-        true_lens = true_lens.squeeze(0)
+        true_lens = true_lens.to(device).squeeze(0)
 
         with torch.no_grad():
             loss = model(encoder_seq, target_seq, true_lens)
@@ -130,18 +130,18 @@ def training_cycle(model,
 
         validation_losses.append(epoch_validation_losses)
 
-        epoch_accuracy = epoch_scores["example-wise_accuracy"]
+        epoch_accuracy = epoch_scores["example_accuracy"]
 
         message = "\n" + "*" * 50 + "\n"
         message += f"Epoch: {n_epoch}\n"
-        message += f"Train loss: {mean_train_loss}\n"
-        message += f"Validation loss: {mean_validation_loss}\n"
+        message += f"Train loss: {mean_train_loss:.6f}\n"
+        message += f"Validation loss: {mean_validation_loss:.6f}\n"
         message += "Validation metrics:\n"
-        message += f"    examplewise_accuracy: {epoch_accuracy}\n"
+        message += f"    example_accuracy: {epoch_accuracy:.6f}\n"
 
         for name, score in epoch_scores.items():
-            if name != "example-wise_accuracy":
-                message += f"    {name}: {score}\n"
+            if name != "example_accuracy":
+                message += f"    {name}: {score:.6f}\n"
 
         message += "*" * 50 + "\n"
         print(message)
