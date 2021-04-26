@@ -26,11 +26,12 @@ from src.utils.tokenizers import SymTokenizer
 
 TRAIN_MODEL = True
 TEST_MODEL = True
-WRITE_RESULTS = True
+# TODO individual file names for different model types
+WRITE_RESULTS = False
 N_WITHOUT_IMPROVEMENTS = 4
 TRAIN_TYPE = "lemmas"
-MODEL_NAME = "RandomTagger"
-# MODEL_NAME = "LstmTagger"
+# MODEL_NAME = "RandomTagger"
+MODEL_NAME = "LstmTagger"
 # MODEL_NAME = "TransformerTagger"
 
 BATCH_SIZE = 128
@@ -149,10 +150,10 @@ valid_loader = DataLoader(valid_ds, batch_size=1)
 #     break
 
 
-metrics = {"f1_score": partial(f1_score, average="weighted"),
+metrics = {"f1_score": partial(f1_score, average="weighted", zero_division=0),
            "accuracy": accuracy_score,
-           "precision": partial(precision_score, average="weighted"),
-           "recall": partial(recall_score, average="weighted")}
+           "precision": partial(precision_score, average="weighted", zero_division=0),
+           "recall": partial(recall_score, average="weighted", zero_division=0)}
 
 device = torch.device('cuda')
 

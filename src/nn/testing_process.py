@@ -99,7 +99,9 @@ def evaluate_random_baseline(data_loader: DataLoader,
         encoder_seq = encoder_seq.to(device).squeeze(0)
         target_seq = target_seq.to(device).squeeze(0)
         true_lens = true_lens.to(device).squeeze(0)
+
         preds = segmenter.tagger.predict(encoder_seq)
+
         batch_scores = evaluate_batch(y_true=target_seq,
                                       y_pred=preds,
                                       metrics=metrics,
