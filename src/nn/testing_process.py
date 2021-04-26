@@ -1,10 +1,13 @@
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Union, List, Optional
 
 from torch.utils.data import DataLoader
+import numpy as np
 
 from src.utils.datasets import BmesSegmentationDataset
+from src.utils.metrics import evaluate_batch
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.nn.training_process import evaluate
 from src.utils.tokenizers import sequence2bmes
@@ -39,10 +42,15 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
 
     data_loader = DataLoader(data, batch_size=1)
 
-    _, overall_scores, _ = evaluate(model=segmenter.tagger,
-                                    loader=data_loader,
-                                    device=device,
-                                    metrics=metrics)
+    if segmenter.__class__.__name__ == "RandomSegmenter":
+
+        overall_scores = evaluate_random_baseline(data_loader, device, metrics, segmenter)
+
+    else:
+        _, overall_scores, _ = evaluate(model=segmenter.tagger,
+                                        loader=data_loader,
+                                        device=device,
+                                        metrics=metrics)
 
     message = "\n" + "*" * 50 + "\n"
 
@@ -61,6 +69,7 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
     file_path.mkdir(parents=True, exist_ok=True)
     file_path = file_path / "test.jsonl"
 
+    # TODO refactor to use batches
     # predicted_segmentation = segmenter.tag_batch(original)
     if write_predictions and write_path:
         with open(file_path, "w") as file:
@@ -77,6 +86,28 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
         print("No write path was specified!")
     else:
         pass
+
+
+def evaluate_random_baseline(data_loader: DataLoader,
+                             device: object,
+                             metrics: dict,
+                             segmenter: RandomSegmenter) -> Optional[dict]:
+
+    batch_scores = defaultdict(lambda: [])
+    for index_seq, encoder_seq, target_seq, true_lens in data_loader:
+        index_seq = index_seq.squeeze(0)
+        encoder_seq = encoder_seq.to(device).squeeze(0)
+        target_seq = target_seq.to(device).squeeze(0)
+        true_lens = true_lens.to(device).squeeze(0)
+        preds = segmenter.tagger.predict(encoder_seq)
+        batch_scores = evaluate_batch(y_true=target_seq,
+                                      y_pred=preds,
+                                      metrics=metrics,
+                                      batch_scores=batch_scores,
+                                      true_lengths=true_lens)
+    if batch_scores:
+        overall_scores = {name: np.mean(values) for name, values in batch_scores.items()}
+        return overall_scores
 
 
 

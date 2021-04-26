@@ -25,11 +25,12 @@ from src.utils.tokenizers import SymTokenizer
 
 
 TRAIN_MODEL = True
-TEST_MODEL = False
-WRITE_RESULTS = False
+TEST_MODEL = True
+WRITE_RESULTS = True
 N_WITHOUT_IMPROVEMENTS = 4
 TRAIN_TYPE = "lemmas"
-MODEL_NAME = "LstmTagger"
+MODEL_NAME = "RandomTagger"
+# MODEL_NAME = "LstmTagger"
 # MODEL_NAME = "TransformerTagger"
 
 BATCH_SIZE = 128
@@ -42,7 +43,10 @@ LSTM_LAYERS = 3
 LAYER_DROPOUT = 0.3
 BIDIRECTIONAL = True
 
-if TRAIN_TYPE == "lemmas":
+if MODEL_NAME == "RandomTagger":
+    TRAIN_MODEL = False
+
+if TRAIN_TYPE.lower() == "lemmas":
     from constants import CONVERTED_LEMMAS_PATHS
 
     RESULTS_PATH = "data/results/lemmas/"
@@ -50,7 +54,7 @@ if TRAIN_TYPE == "lemmas":
     valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["valid"])
     test_indices, test_original, test_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["test"])
 
-elif TRAIN_TYPE == "forms":
+elif TRAIN_TYPE.lower() == "forms":
     from constants import CONVERTED_FORMS_PATHS
 
     RESULTS_PATH = "data/results/forms/"
@@ -144,17 +148,18 @@ valid_loader = DataLoader(valid_ds, batch_size=1)
 #     print(out)
 #     break
 
-optimizer = torch.optim.Adam(params=enc.parameters())
-device = torch.device('cuda')
-
-enc.to(device)
 
 metrics = {"f1_score": partial(f1_score, average="weighted"),
            "accuracy": accuracy_score,
            "precision": partial(precision_score, average="weighted"),
            "recall": partial(recall_score, average="weighted")}
 
+device = torch.device('cuda')
+
 if TRAIN_MODEL:
+
+    optimizer = torch.optim.Adam(params=enc.parameters())
+    enc.to(device)
     training_cycle(model=enc,
                    train_loader=train_loader,
                    validation_loader=valid_loader,
@@ -165,15 +170,17 @@ if TRAIN_MODEL:
                    epochs=EPOCHS,
                    n_without_improvements=N_WITHOUT_IMPROVEMENTS)
 
-# segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
-#                             bmes_tokenizer=bmes_tokenizer,
-#                             labels=bmes_tokenizer.meaningful_label_indices)
 
-segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
-                            bmes_tokenizer=bmes_tokenizer,
-                            model=enc,
-                            device=device,
-                            seed=1)
+if MODEL_NAME == "RandomTagger":
+    segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
+                                bmes_tokenizer=bmes_tokenizer,
+                                labels=bmes_tokenizer.meaningful_label_indices)
+else:
+    segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
+                                bmes_tokenizer=bmes_tokenizer,
+                                model=enc,
+                                device=device,
+                                seed=1)
 
 if TEST_MODEL:
     testing_cycle(segmenter=segmenter,
