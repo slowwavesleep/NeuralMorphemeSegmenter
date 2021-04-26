@@ -1,3 +1,4 @@
+import math
 from typing import Iterable
 
 import torch
@@ -249,34 +250,56 @@ class TransformerEncoder(nn.Module):
                  vocab_size,
                  emb_dim,
                  n_heads,
-                 fw_dim,
+                 hidden_size,
                  dropout,
-                 padding_index):
+                 padding_index,
+                 max_len,
+                 num_layers):
+
         super(TransformerEncoder, self).__init__()
+
+        self.vocab_size = vocab_size
 
         self.embedding = nn.Embedding(num_embeddings=vocab_size,
                                       embedding_dim=emb_dim,
                                       padding_idx=padding_index)
 
-        self.transformer_encoder = nn.TransformerEncoderLayer(d_model=emb_dim,
-                                                              nhead=n_heads,
-                                                              dim_feedforward=fw_dim,
-                                                              dropout=dropout)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=emb_dim,
+                                                   nhead=n_heads,
+                                                   dim_feedforward=hidden_size,
+                                                   dropout=dropout)
+
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer=encoder_layer,
+                                                         num_layers=num_layers)
+
+        self.pos_encoder = PositionalEncoding(d_model=emb_dim,
+                                              dropout=dropout,
+                                              max_len=max_len)
+
+    def forward(self, x, mask=None):
+        x = self.embedding(x) * math.sqrt(self.vocab_size)
+        x = self.pos_encoder(x.transpose(0, 1))
+        x = self.transformer_encoder(x, mask)
+        return x.transpose(0, 1)
+
+
+class PositionalEncoding(nn.Module):
+
+    def __init__(self, d_model, dropout, max_len):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = self.embedding(x)
-        x = self.transformer_encoder(x)
-
-        return x
-
-
-def get_pad_mask(seq_1, seq_2):
-    # (batch_size, seq_len_1), (batch_size, seq_len_2)  -> (batch_size, seq_len_2, seq_len_1)
-    seq_len_1 = seq_1.size(-1)
-    seq_len_2 = seq_2.size(-1)
-    lens = get_non_pad_lens(seq_1)
-    masks = [torch.arange(seq_len_1).expand(seq_len_2, seq_len_1) >= true_len for true_len in lens]
-    return torch.stack(masks).cuda()
+        x = x + self.pe[:x.size(0), :]
+        return self.dropout(x)
 
 
 def get_non_pad_lens(seq):

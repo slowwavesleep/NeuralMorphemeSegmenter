@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torchcrf import CRF
 import numpy as np
 
-from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, get_pad_mask, SpatialDropout, \
+from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, SpatialDropout, \
     CnnEncoder, TransformerEncoder
 
 
@@ -244,9 +244,11 @@ class TransformerTagger(nn.Module):
                  tag_vocab_size,
                  emb_dim,
                  n_heads,
-                 fw_dim,
+                 hidden_size,
                  dropout,
-                 padding_index):
+                 padding_index,
+                 max_len,
+                 num_layers):
         super(TransformerTagger, self).__init__()
 
         self.tag_vocab_size = tag_vocab_size
@@ -255,20 +257,36 @@ class TransformerTagger(nn.Module):
         self.transformer_encoder = TransformerEncoder(vocab_size=char_vocab_size,
                                                       emb_dim=emb_dim,
                                                       n_heads=n_heads,
-                                                      fw_dim=fw_dim,
+                                                      hidden_size=hidden_size,
                                                       dropout=dropout,
-                                                      padding_index=self.padding_index)
+                                                      padding_index=self.padding_index,
+                                                      max_len=max_len,
+                                                      num_layers=num_layers)
 
-        self.fc = nn.Linear(in_features=fw_dim,
+        self.fc = nn.Linear(in_features=hidden_size,
                             out_features=tag_vocab_size)
 
         self.loss = torch.nn.CrossEntropyLoss(
             ignore_index=self.padding_index,
-            reduction='sum')
+            reduction='none')
+
+        self.init_weights()
+
+    def init_weights(self):
+        init_range = 0.1
+        self.transformer_encoder.embedding.weight.data.uniform_(-init_range, init_range)
+        self.fc.bias.data.zero_()
+        self.fc.weight.data.uniform_(-init_range, init_range)
+
+    @staticmethod
+    def generate_square_subsequent_mask(sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
 
     def compute_outputs(self, sequences, true_lengths):
-
-        sequences = self.transformer_encoder(sequences)
+        mask = self.generate_square_subsequent_mask(sequences.size(1)).cuda().transpose(0, 1)
+        sequences = self.transformer_encoder(sequences, mask)
         sequences = self.fc(sequences)
 
         return sequences
@@ -279,7 +297,16 @@ class TransformerTagger(nn.Module):
         scores = scores.view(-1, self.tag_vocab_size)
         labels = labels.view(-1)
 
-        return self.loss(scores, labels)
+        pad_mask = (sequences != self.padding_index).float()
+
+        loss = self.loss(scores, labels)
+        loss = loss.view(sequences.size(0), sequences.size(1))
+        loss *= pad_mask
+        loss = torch.sum(loss, axis=1)
+        loss /= true_lengths
+        loss = torch.mean(loss)
+
+        return loss
 
     def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
         if true_lengths is None:

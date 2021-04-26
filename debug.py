@@ -25,7 +25,7 @@ from src.utils.tokenizers import SymTokenizer
 
 
 TRAIN_MODEL = True
-TEST_MODEL = True
+TEST_MODEL = False
 # TODO individual file names for different model types
 WRITE_RESULTS = False
 N_WITHOUT_IMPROVEMENTS = 4
@@ -35,14 +35,17 @@ MODEL_NAME = "LstmTagger"
 # MODEL_NAME = "TransformerTagger"
 
 BATCH_SIZE = 128
-HIDDEN_SIZE = 512
-EMB_DIM = 512
+HIDDEN_SIZE = 256
+EMB_DIM = 256
 SPATIAL_DROPOUT = 0.3
 EPOCHS = 1
 CLIP = 3.
 LSTM_LAYERS = 3
 LAYER_DROPOUT = 0.3
 BIDIRECTIONAL = True
+
+NUM_HEADS = 4
+NUM_LAYERS = 3
 
 if MODEL_NAME == "RandomTagger":
     TRAIN_MODEL = False
@@ -110,10 +113,12 @@ elif MODEL_NAME == "TransformerTagger":
     enc = TransformerTagger(char_vocab_size=original_tokenizer.vocab_size,
                             tag_vocab_size=bmes_tokenizer.vocab_size,
                             emb_dim=EMB_DIM,
-                            n_heads=1,
-                            fw_dim=256,
-                            dropout=0.3,
-                            padding_index=PAD_INDEX)
+                            n_heads=NUM_HEADS,
+                            hidden_size=HIDDEN_SIZE,
+                            dropout=SPATIAL_DROPOUT,
+                            padding_index=PAD_INDEX,
+                            max_len=MAX_LEN,
+                            num_layers=NUM_LAYERS)
 
 elif MODEL_NAME == "LstmCrfTagger":
     from src.nn.models import LstmCrfTagger
