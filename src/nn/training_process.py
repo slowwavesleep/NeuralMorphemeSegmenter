@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from typing import Callable, Dict, Optional, Tuple
 
@@ -104,15 +105,25 @@ def training_cycle(model,
                    clip,
                    metrics: Optional[Dict[str, Callable]] = None,
                    epochs: int = 1,
-                   n_without_improvements: int = 2):
+                   n_without_improvements: int = 2,
+                   early_stopping: bool = True,
+                   save_best: bool = True,
+                   save_last: bool = True):
+
+    model_name = model.__class__.__name__
+
     train_losses = []
     validation_losses = []
 
+    impatience = 0
+
     best_accuracy = 0.
 
-    # if not os.path.exists('./models'):
-    #     os.makedirs('./models')
-    #
+    model_save_dir = f"./models/{model_name}"
+
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
+
     # if not os.path.exists('./logs'):
     #     os.makedirs('./logs')
 
@@ -148,19 +159,32 @@ def training_cycle(model,
 
         if epoch_accuracy > best_accuracy:
 
-            best_accuracy = epoch_accuracy
-        #
-        #     torch.save(model.state_dict(), f'models/best_language_model_state_dict.pth')
-        #     torch.save(optimizer.state_dict(), 'models/best_optimizer_state_dict.pth')
-        #
-        elif not n_without_improvements:
-            break
-        else:
-            n_without_improvements -= 1
+            print(f"Accuracy improved from the previous best of {best_accuracy:.6f}")
 
-        # torch.save(model.state_dict(), f'models/last_language_model_state_dict.pth')
-        # torch.save(optimizer.state_dict(), 'models/last_optimizer_state_dict.pth')
-        #
+            best_accuracy = epoch_accuracy
+            impatience = 0
+
+            if save_best:
+                print(f"Saving the current best state...")
+                torch.save(model.state_dict(), f"{model_save_dir}/best_model_state_dict.pth")
+                torch.save(optimizer.state_dict(), f"{model_save_dir}/best_optimizer_state_dict.pth")
+
+        else:
+            print(f"Accuracy did not improve from the previous best of {best_accuracy:.6f}")
+            impatience += 1
+            if early_stopping:
+                print(f"Current impatience: {impatience}")
+                print(f"Stopping at {n_without_improvements} impatience")
+
+        if early_stopping and impatience > n_without_improvements:
+            print(f"Early stopping because there was no improvement for {impatience} epochs")
+            break
+
+        if save_last:
+            print(f"Saving the current state...")
+            torch.save(model.state_dict(), f"{model_save_dir}/last_language_model_state_dict.pth")
+            torch.save(optimizer.state_dict(), f"{model_save_dir}/last_optimizer_state_dict.pth")
+
         # with open(f'logs/info_{n_epoch}.json', 'w') as file_object:
         #
         #     info = {
@@ -172,3 +196,6 @@ def training_cycle(model,
         #     }
         #
         #     file_object.write(json.dumps(info, indent=2))
+    if save_best:
+        print("Loading the best model...")
+        model.load_state_dict(torch.load(f"{model_save_dir}/best_model_state_dict.pth"))

@@ -17,7 +17,6 @@ from src.nn.layers import CnnEncoder
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
-# TODO 1) fix metrics 2) save models
 
 # parser = argparse.ArgumentParser(description='Run model with specified settings.')
 # parser.add_argument(dest='config', type=str, help='Path to config file.')
@@ -39,7 +38,7 @@ BATCH_SIZE = 128
 HIDDEN_SIZE = 512
 EMB_DIM = 512
 SPATIAL_DROPOUT = 0.3
-EPOCHS = 10
+EPOCHS = 1
 CLIP = 3.
 LSTM_LAYERS = 3
 LAYER_DROPOUT = 0.3
