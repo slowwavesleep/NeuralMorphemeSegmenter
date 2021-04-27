@@ -122,14 +122,26 @@ class LstmCrfTagger(nn.Module):
                                          bidirectional=bidirectional,
                                          padding_index=padding_index)
 
-        self.fc = nn.Linear(in_features=hidden_size * self.directions,
-                            out_features=tag_vocab_size)
+        self.fc_1 = nn.Linear(in_features=hidden_size * self.directions,
+                              out_features=hidden_size)
+
+        self.fc_2 = nn.Linear(in_features=hidden_size,
+                              out_features=tag_vocab_size)
+
+        self.layer_norm = nn.LayerNorm(hidden_size * self.directions)
+
+        self.spatial_dropout = SpatialDropout(p=spatial_dropout)
 
         self.crf = CRF(self.tag_vocab_size, batch_first=True)
 
-    def compute_outputs(self, sequences):
-        encoder_seq, memory = self.encoder(sequences)
-        encoder_out = self.fc(encoder_seq)
+    def compute_outputs(self, sequences, true_lengths):
+        encoder_seq, memory = self.encoder(sequences, true_lengths)
+        encoder_seq = self.spatial_dropout(encoder_seq)
+        encoder_seq = self.layer_norm(encoder_seq)
+        encoder_out = self.fc_1(encoder_seq)
+        encoder_out = torch.relu(encoder_out)
+        encoder_out = self.fc_2(encoder_out)
+        encoder_out = torch.relu(encoder_out)
 
         pad_mask = (sequences == self.padding_index).float()
 
@@ -137,13 +149,20 @@ class LstmCrfTagger(nn.Module):
 
         return encoder_out
 
-    def forward(self, sequences, labels):
-        scores = self.compute_outputs(sequences)
+    def forward(self, sequences, labels, true_lengths):
+        scores = self.compute_outputs(sequences, true_lengths)
 
-        return -self.crf(scores, labels, reduction="sum")
+        loss = -self.crf(scores, labels, reduction="mean")
 
-    def predict(self, sentences):
-        scores = self.compute_outputs(sentences)
+        return loss
+
+    def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
+        if true_lengths is None:
+            print("True lengths of sequences not specified!")
+            true_lengths = [sequences.size(1)] * sequences.size(0)
+            true_lengths = torch.tensor(true_lengths).long()
+
+        scores = self.compute_outputs(sequences, true_lengths)
         predicted = np.array(self.crf.decode(scores))
 
         return predicted

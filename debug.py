@@ -31,14 +31,15 @@ WRITE_RESULTS = False
 N_WITHOUT_IMPROVEMENTS = 4
 TRAIN_TYPE = "lemmas"
 # MODEL_NAME = "RandomTagger"
-MODEL_NAME = "LstmTagger"
+# MODEL_NAME = "LstmTagger"
 # MODEL_NAME = "TransformerTagger"
+MODEL_NAME = "LstmCrfTagger"
 
 BATCH_SIZE = 128
-HIDDEN_SIZE = 256
-EMB_DIM = 256
+HIDDEN_SIZE = 512
+EMB_DIM = 512
 SPATIAL_DROPOUT = 0.3
-EPOCHS = 1
+EPOCHS = 10
 CLIP = 3.
 LSTM_LAYERS = 3
 LAYER_DROPOUT = 0.3
@@ -46,6 +47,8 @@ BIDIRECTIONAL = True
 
 NUM_HEADS = 4
 NUM_LAYERS = 3
+
+LR = 1e-05
 
 if MODEL_NAME == "RandomTagger":
     TRAIN_MODEL = False
@@ -128,7 +131,9 @@ elif MODEL_NAME == "LstmCrfTagger":
                         hidden_size=HIDDEN_SIZE,
                         spatial_dropout=SPATIAL_DROPOUT,
                         bidirectional=True,
-                        padding_index=PAD_INDEX)
+                        padding_index=PAD_INDEX,
+                        lstm_layers=LSTM_LAYERS,
+                        layer_dropout=LAYER_DROPOUT)
 
 elif MODEL_NAME == "RandomTagger":
     enc = None
