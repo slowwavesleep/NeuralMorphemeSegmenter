@@ -18,15 +18,17 @@ from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
 
-# parser = argparse.ArgumentParser(description='Run model with specified settings.')
-# parser.add_argument(dest='config', type=str, help='Path to config file.')
-# args = parser.parse_args()
+parser = argparse.ArgumentParser(description='Run model with specified settings')
+parser.add_argument("-p", "--path", help="Path to a configuration YAML", type=str)
+args = parser.parse_args()
 
+if args.path is not None:
+    print("OK")
 
 TRAIN_MODEL = True
-TEST_MODEL = False
+TEST_MODEL = True
 # TODO individual file names for different model types
-WRITE_RESULTS = False
+WRITE_RESULTS = True
 N_WITHOUT_IMPROVEMENTS = 4
 TRAIN_TYPE = "lemmas"
 # MODEL_NAME = "RandomTagger"
@@ -38,7 +40,7 @@ BATCH_SIZE = 128
 HIDDEN_SIZE = 512
 EMB_DIM = 512
 SPATIAL_DROPOUT = 0.3
-EPOCHS = 1
+EPOCHS = 20
 CLIP = 3.
 LSTM_LAYERS = 3
 LAYER_DROPOUT = 0.3
@@ -135,6 +137,7 @@ elif MODEL_NAME == "LstmCrfTagger":
                         layer_dropout=LAYER_DROPOUT)
 
 elif MODEL_NAME == "RandomTagger":
+    # TODO improve this
     enc = None
 
 else:
