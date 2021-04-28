@@ -143,14 +143,11 @@ elif model_name == "TransformerTagger":
                               max_len=MAX_LEN,
                               **model_params)
 elif model_name == "CnnTagger":
-    # TODO implement this
-    raise NotImplementedError
-    # enc = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
-    #                 tag_vocab_size=bmes_tokenizer.vocab_size,
-    #                 emb_dim=EMB_DIM,
-    #                 num_filters=300,
-    #                 kernel_size=3,
-    #                 padding_index=PAD_INDEX)
+
+    model = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
+                      tag_vocab_size=bmes_tokenizer.vocab_size,
+                      padding_index=PAD_INDEX,
+                      **model_params)
 
 elif model_name == "RandomTagger":
     # TODO improve this
@@ -158,7 +155,6 @@ elif model_name == "RandomTagger":
 
 else:
     raise Exception
-
 
 train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
 valid_loader = DataLoader(valid_ds, batch_size=1)

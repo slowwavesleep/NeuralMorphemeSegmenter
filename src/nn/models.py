@@ -178,6 +178,7 @@ class CnnTagger(nn.Module):
                  kernel_size: int,
                  spatial_dropout: float = 0.,
                  padding_index: int = 0):
+
         super(CnnTagger, self).__init__()
         self.tag_vocab_size = tag_vocab_size
         self.padding_index = padding_index
@@ -195,28 +196,33 @@ class CnnTagger(nn.Module):
 
         self.loss = torch.nn.CrossEntropyLoss(
             ignore_index=self.padding_index,
-            reduction='sum')
+            reduction='none')
 
-    def compute_outputs(self, sequences):
+    def compute_outputs(self, sequences, true_lengths):
         encoder_seq = self.encoder(sequences)
         encoder_out = self.fc(encoder_seq)
 
-        pad_mask = (sequences == self.padding_index).float()
-
-        encoder_out[:, :, self.padding_index] += pad_mask * 10000
-
         return encoder_out
 
-    def forward(self, sequences, labels):
-        scores = self.compute_outputs(sequences)
+    def forward(self, sequences, labels, true_lengths):
+        scores = self.compute_outputs(sequences, true_lengths)
 
         scores = scores.view(-1, self.tag_vocab_size)
         labels = labels.view(-1)
 
-        return self.loss(scores, labels)
+        pad_mask = (sequences != self.padding_index).float()
 
-    def predict(self, sentences):
-        scores = self.compute_outputs(sentences)
+        loss = self.loss(scores, labels)
+        loss = loss.view(sequences.size(0), sequences.size(1))
+        loss *= pad_mask
+        loss = torch.sum(loss, axis=1)
+        loss /= true_lengths
+        loss = torch.mean(loss)
+
+        return loss
+
+    def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
+        scores = self.compute_outputs(sequences, true_lengths)
 
         predicted = scores.argmax(dim=2)
 
