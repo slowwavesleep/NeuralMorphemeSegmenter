@@ -7,6 +7,7 @@ from constants import CONVERTED_FORMS_PATHS, PROCESSED_ARTICLES_PATH
 from src.utils.conversion import process_forms, write_examples
 
 
+# TODO add different splitting strategies
 def main():
     Path("data/converted_forms").mkdir(parents=True, exist_ok=True)
 

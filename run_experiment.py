@@ -31,11 +31,6 @@ with open(config_path) as file:
 flow_control = config["flow_control"]
 train_params = config["train_params"]
 
-# TRAIN_TYPE = "forms"
-# MODEL_NAME = "RandomTagger"
-# MODEL_NAME = "LstmTagger"
-# MODEL_NAME = "TransformerTagger"
-
 # train parameters
 batch_size = train_params["batch_size"]
 model_name = train_params["model_name"]
@@ -51,11 +46,6 @@ save_last = train_params["save_last"]
 # specific to models
 # TODO parametrize seed for models
 model_params = config["model_params"]
-# HIDDEN_SIZE = 512
-# EMB_DIM = 512
-# SPATIAL_DROPOUT = 0.3
-# NUM_HEADS = 4
-# NUM_LAYERS = 3
 
 if model_name == "RandomTagger":
     TRAIN_MODEL = False
