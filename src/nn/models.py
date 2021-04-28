@@ -174,7 +174,8 @@ class CnnTagger(nn.Module):
                  char_vocab_size: int,
                  tag_vocab_size: int,
                  emb_dim: int,
-                 num_filters: int,
+                 hidden_size: int,
+                 convolution_layers: int,
                  kernel_size: int,
                  spatial_dropout: float = 0.,
                  padding_index: int = 0):
@@ -185,22 +186,31 @@ class CnnTagger(nn.Module):
 
         self.encoder = CnnEncoder(vocab_size=char_vocab_size,
                                   emb_dim=emb_dim,
-                                  dropout=0.3,
-                                  num_filters=num_filters,
+                                  spatial_dropout=spatial_dropout,
+                                  convolution_layers=convolution_layers,
                                   kernel_size=kernel_size,
-                                  out_dim=100,
                                   padding_index=padding_index)
 
-        self.fc = nn.Linear(in_features=num_filters,
-                            out_features=tag_vocab_size)
+        self.fc_1 = nn.Linear(in_features=emb_dim,
+                              out_features=hidden_size)
+        self.fc_2 = nn.Linear(in_features=hidden_size,
+                              out_features=tag_vocab_size)
+
+        self.layer_norm = nn.LayerNorm(emb_dim)
+        self.spatial_dropout = SpatialDropout(p=spatial_dropout)
 
         self.loss = torch.nn.CrossEntropyLoss(
             ignore_index=self.padding_index,
             reduction='none')
 
     def compute_outputs(self, sequences, true_lengths):
-        encoder_seq = self.encoder(sequences)
-        encoder_out = self.fc(encoder_seq)
+        encoder_seq_convolved, encoder_seq_combined = self.encoder(sequences)
+        encoder_seq_combined = self.spatial_dropout(encoder_seq_combined)
+        encoder_seq_combined = self.layer_norm(encoder_seq_combined)
+        encoder_out = self.fc_1(encoder_seq_combined)
+        encoder_out = torch.relu(encoder_out)
+        encoder_out = self.fc_2(encoder_out)
+        encoder_out = torch.relu(encoder_out)
 
         return encoder_out
 
@@ -229,37 +239,71 @@ class CnnTagger(nn.Module):
         return predicted.cpu().numpy()
 
 
-class RandomTagger(nn.Module):
+class CnnCrfTagger(nn.Module):
 
     def __init__(self,
-                 labels: List[int],
-                 seed: Optional[int] = None):
+                 char_vocab_size: int,
+                 tag_vocab_size: int,
+                 emb_dim: int,
+                 hidden_size: int,
+                 convolution_layers: int,
+                 kernel_size: int,
+                 spatial_dropout: float = 0.,
+                 padding_index: int = 0):
 
-        self.labels = labels
-        self.seed = seed
+        super(CnnCrfTagger, self).__init__()
+        self.tag_vocab_size = tag_vocab_size
+        self.padding_index = padding_index
 
-    def compute_outputs(self, sequences: Tensor):
-        pass
+        self.encoder = CnnEncoder(vocab_size=char_vocab_size,
+                                  emb_dim=emb_dim,
+                                  spatial_dropout=spatial_dropout,
+                                  convolution_layers=convolution_layers,
+                                  kernel_size=kernel_size,
+                                  padding_index=padding_index)
 
-    def forward(self, sequences: Tensor, labels: Tensor):
-        pass
+        self.fc_1 = nn.Linear(in_features=emb_dim,
+                              out_features=hidden_size)
+        self.fc_2 = nn.Linear(in_features=hidden_size,
+                              out_features=tag_vocab_size)
 
-    def predict(self, sequences: Tensor) -> np.ndarray:
-        size = tuple(sequences.size())
-        with self.temp_seed(self.seed):
-            predicted = np.random.choice(a=self.labels, size=size)
+        self.layer_norm = nn.LayerNorm(emb_dim)
+        self.spatial_dropout = SpatialDropout(p=spatial_dropout)
 
-        return predicted
+        self.crf = CRF(self.tag_vocab_size, batch_first=True)
 
-    @staticmethod
-    @contextmanager
-    def temp_seed(seed):
-        state = np.random.get_state()
-        np.random.seed(seed)
-        try:
-            yield
-        finally:
-            np.random.set_state(state)
+        self.loss = torch.nn.CrossEntropyLoss(
+            ignore_index=self.padding_index,
+            reduction='none')
+
+    def compute_outputs(self, sequences, true_lengths):
+        encoder_seq_convolved, encoder_seq_combined = self.encoder(sequences)
+        encoder_seq_combined = self.spatial_dropout(encoder_seq_combined)
+        encoder_seq_combined = self.layer_norm(encoder_seq_combined)
+        encoder_out = self.fc_1(encoder_seq_combined)
+        encoder_out = torch.relu(encoder_out)
+        encoder_out = self.fc_2(encoder_out)
+        encoder_out = torch.relu(encoder_out)
+
+        pad_mask = (sequences == self.padding_index).float()
+
+        encoder_out[:, :, self.padding_index] += pad_mask * 10000
+
+        return encoder_out
+
+    def forward(self, sequences, labels, true_lengths):
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        loss = -self.crf(scores, labels, reduction="mean")
+
+        return loss
+
+    def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        predicted = scores.argmax(dim=2)
+
+        return predicted.cpu().numpy()
 
 
 class TransformerTagger(nn.Module):
@@ -344,3 +388,38 @@ class TransformerTagger(nn.Module):
         predicted = scores.argmax(dim=2)
 
         return predicted.cpu().numpy()
+
+
+class RandomTagger(nn.Module):
+
+    def __init__(self,
+                 labels: List[int],
+                 seed: Optional[int] = None):
+
+        self.labels = labels
+        self.seed = seed
+
+    def compute_outputs(self, sequences: Tensor):
+        pass
+
+    def forward(self, sequences: Tensor, labels: Tensor):
+        pass
+
+    def predict(self, sequences: Tensor) -> np.ndarray:
+        size = tuple(sequences.size())
+        with self.temp_seed(self.seed):
+            predicted = np.random.choice(a=self.labels, size=size)
+
+        return predicted
+
+    @staticmethod
+    @contextmanager
+    def temp_seed(seed):
+        state = np.random.get_state()
+        np.random.seed(seed)
+        try:
+            yield
+        finally:
+            np.random.set_state(state)
+
+

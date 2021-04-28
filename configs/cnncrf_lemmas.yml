@@ -10,9 +10,9 @@ train_params:
   save_best: True
   save_last: True
   train_type: "lemmas"
-  model_name: "CnnTagger"
+  model_name: "CnnCrfTagger"
   batch_size: 128
-  n_epochs: 1
+  n_epochs: 5
   grad_clip: 3.
   lr: 1e-03
 

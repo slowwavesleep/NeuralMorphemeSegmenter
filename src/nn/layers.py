@@ -1,8 +1,10 @@
 import math
-from typing import Iterable
+from typing import Iterable, List, Optional
 
+import numpy as np
 import torch
 from torch import nn
+import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
@@ -209,39 +211,50 @@ class CnnEncoder(nn.Module):
     def __init__(self,
                  vocab_size: int,
                  emb_dim: int,
-                 dropout: float,
-                 num_filters: int,
+                 spatial_dropout: float,
+                 convolution_layers: int,
                  kernel_size: int,
-                 out_dim: int,
-                 padding_index: int):
+                 padding_index: int,
+                 scale: Optional[float] = None):
         super(CnnEncoder, self).__init__()
         self.vocab_size = vocab_size
         self.emb_dim = emb_dim
-        self.num_filters = num_filters
+        self.convolution_layers = convolution_layers
         self.kernel_size = kernel_size
-        self.out_dim = out_dim
 
         self.embedding = nn.Embedding(num_embeddings=vocab_size,
                                       embedding_dim=emb_dim,
                                       padding_idx=padding_index)
+        if scale is not None:
+            self.scale = scale
+        else:
+            self.scale = np.sqrt(0.5)
 
-        # self.conv_layers = nn.ModuleList([nn.Conv1d(in_channels=self.emb_dim,
-        #                                             out_channels=self.num_filters,
-        #                                             kernel_size=k)
-        #                                   for k in self.kernel_sizes])
+        self.convolutions = nn.ModuleList([nn.Conv1d(in_channels=self.emb_dim,
+                                                     out_channels=2 * self.emb_dim,
+                                                     kernel_size=kernel_size,
+                                                     padding=(kernel_size - 1) // 2)
+                                           for _ in range(self.convolution_layers)])
 
-        self.conv = nn.Conv1d(in_channels=self.emb_dim,
-                              out_channels=self.num_filters,
-                              kernel_size=kernel_size,
-                              padding=1)
+        self.spatial_dropout = SpatialDropout(p=spatial_dropout)
+        self.layer_norm = nn.LayerNorm(emb_dim)
 
-        self.dropout = nn.Dropout(dropout)
+    def forward(self, sequence):
+        sequence = self.embedding(sequence)
+        sequence = self.spatial_dropout(sequence)
+        sequence = self.layer_norm(sequence)
+        sequence_input = sequence.permute(0, 2, 1)
 
-    def forward(self, x):
-        x = self.embedding(x)
-        x = torch.relu(self.conv(x.transpose(1, 2)).transpose(1, 2))
+        for i, conv in enumerate(self.convolutions):
+            convolved = conv(self.spatial_dropout(sequence_input))
+            convolved = F.glu(convolved, dim=1)
+            convolved = (convolved + sequence_input) * self.scale
+            sequence_input = convolved
 
-        return x
+        convolved = convolved.permute(0, 2, 1)
+        combined = (convolved + sequence) * self.scale
+
+        return convolved, combined
 
 
 class TransformerEncoder(nn.Module):
@@ -255,7 +268,6 @@ class TransformerEncoder(nn.Module):
                  padding_index,
                  max_len,
                  num_layers):
-
         super(TransformerEncoder, self).__init__()
 
         self.vocab_size = vocab_size

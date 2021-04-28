@@ -13,8 +13,6 @@ from src.utils.tokenizers import SymTokenizer, bmes2sequence
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
 from src.nn.testing_process import testing_cycle
-from src.nn.models import CnnTagger, RandomTagger
-from src.nn.layers import CnnEncoder
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
@@ -53,11 +51,11 @@ save_last = train_params["save_last"]
 # specific to models
 # TODO parametrize seed for models
 model_params = config["model_params"]
-HIDDEN_SIZE = 512
-EMB_DIM = 512
-SPATIAL_DROPOUT = 0.3
-NUM_HEADS = 4
-NUM_LAYERS = 3
+# HIDDEN_SIZE = 512
+# EMB_DIM = 512
+# SPATIAL_DROPOUT = 0.3
+# NUM_HEADS = 4
+# NUM_LAYERS = 3
 
 if model_name == "RandomTagger":
     TRAIN_MODEL = False
@@ -134,6 +132,23 @@ elif model_name == "LstmCrfTagger":
                           padding_index=PAD_INDEX,
                           **model_params)
 
+elif model_name == "CnnTagger":
+    from src.nn.models import CnnTagger
+
+    model = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
+                      tag_vocab_size=bmes_tokenizer.vocab_size,
+                      padding_index=PAD_INDEX,
+                      **model_params)
+
+elif model_name == "CnnCrfTagger":
+    from src.nn.models import CnnCrfTagger
+
+    model = CnnCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
+                         tag_vocab_size=bmes_tokenizer.vocab_size,
+                         padding_index=PAD_INDEX,
+                         **model_params)
+
+
 elif model_name == "TransformerTagger":
     from src.nn.models import TransformerTagger
 
@@ -142,12 +157,6 @@ elif model_name == "TransformerTagger":
                               padding_index=PAD_INDEX,
                               max_len=MAX_LEN,
                               **model_params)
-elif model_name == "CnnTagger":
-
-    model = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
-                      tag_vocab_size=bmes_tokenizer.vocab_size,
-                      padding_index=PAD_INDEX,
-                      **model_params)
 
 elif model_name == "RandomTagger":
     # TODO improve this
