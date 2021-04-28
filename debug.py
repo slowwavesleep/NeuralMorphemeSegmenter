@@ -1,5 +1,6 @@
 from functools import partial
 import argparse
+import os
 
 from torch.utils.data import DataLoader
 import torch
@@ -17,58 +18,70 @@ from src.nn.layers import CnnEncoder
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
-
 parser = argparse.ArgumentParser(description='Run model with specified settings')
-parser.add_argument("-p", "--path", help="Path to a configuration YAML", type=str)
+parser.add_argument("-p", "--path", help="Path to a YAML configuration file", type=str)
 args = parser.parse_args()
 
-if args.path is not None:
-    print("OK")
+if args.path is None:
+    config_path = "./configs/default.yml"
+else:
+    config_path = args.path
 
-TRAIN_MODEL = True
-TEST_MODEL = True
-# TODO individual file names for different model types
-WRITE_RESULTS = True
-N_WITHOUT_IMPROVEMENTS = 4
-TRAIN_TYPE = "lemmas"
+with open(config_path) as file:
+    config = safe_load(file)
+
+flow_control = config["flow_control"]
+train_params = config["train_params"]
+
+# TRAIN_TYPE = "forms"
 # MODEL_NAME = "RandomTagger"
 # MODEL_NAME = "LstmTagger"
 # MODEL_NAME = "TransformerTagger"
-MODEL_NAME = "LstmCrfTagger"
 
-BATCH_SIZE = 128
+# train parameters
+batch_size = train_params["batch_size"]
+model_name = train_params["model_name"]
+n_epochs = train_params["n_epochs"]
+train_type = train_params["train_type"]
+n_without_improvements = train_params["n_without_improvements"]
+grad_clip = train_params["grad_clip"]
+lr = float(train_params["lr"])
+early_stopping = train_params["early_stopping"]
+save_best = train_params["save_best"]
+save_last = train_params["save_last"]
+
+# specific to models
+# TODO parametrize seed for models
+model_params = config["model_params"]
 HIDDEN_SIZE = 512
 EMB_DIM = 512
 SPATIAL_DROPOUT = 0.3
-EPOCHS = 20
-CLIP = 3.
-LSTM_LAYERS = 3
-LAYER_DROPOUT = 0.3
-BIDIRECTIONAL = True
-
 NUM_HEADS = 4
 NUM_LAYERS = 3
 
-LR = 1e-05
-
-if MODEL_NAME == "RandomTagger":
+if model_name == "RandomTagger":
     TRAIN_MODEL = False
 
-if TRAIN_TYPE.lower() == "lemmas":
+if train_type.lower() == "lemmas":
     from constants import CONVERTED_LEMMAS_PATHS
 
-    RESULTS_PATH = "data/results/lemmas/"
+    results_path = f"data/results/lemmas/{model_name}/"
+    if not os.path.exists(results_path):
+        os.makedirs(results_path)
     train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
     valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["valid"])
     test_indices, test_original, test_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["test"])
 
-elif TRAIN_TYPE.lower() == "forms":
+elif train_type.lower() == "forms":
     from constants import CONVERTED_FORMS_PATHS
 
-    RESULTS_PATH = "data/results/forms/"
+    results_path = f"data/results/forms/{model_name}"
+    if not os.path.exists(results_path):
+        os.makedirs(results_path)
     train_indices, train_original, train_segmented = read_converted_data(CONVERTED_FORMS_PATHS["train"])
     valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_FORMS_PATHS["valid"])
     test_indices, test_original, test_segmented = read_converted_data(CONVERTED_FORMS_PATHS["test"])
+
 else:
     # TODO specify exception
     raise Exception
@@ -88,7 +101,7 @@ train_ds = BmesSegmentationDataset(indices=train_indices,
                                    pad_index=PAD_INDEX,
                                    unk_index=UNK_INDEX,
                                    max_len=MAX_LEN,
-                                   batch_size=BATCH_SIZE)
+                                   batch_size=batch_size)
 
 valid_ds = BmesSegmentationDataset(indices=valid_indices,
                                    original=valid_original,
@@ -98,69 +111,57 @@ valid_ds = BmesSegmentationDataset(indices=valid_indices,
                                    pad_index=PAD_INDEX,
                                    unk_index=UNK_INDEX,
                                    max_len=MAX_LEN,
-                                   batch_size=BATCH_SIZE)
+                                   batch_size=batch_size)
 
-if MODEL_NAME == "LstmTagger":
+if model_params:
+    print(f"Initializing {model_name} with the following parameters:")
+    for key, value in model_params.items():
+        print(f"    {key}: {value}")
+
+if model_name == "LstmTagger":
     from src.nn.models import LstmTagger
-    enc = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
-                     tag_vocab_size=bmes_tokenizer.vocab_size,
-                     emb_dim=EMB_DIM,
-                     hidden_size=HIDDEN_SIZE,
-                     spatial_dropout=SPATIAL_DROPOUT,
-                     bidirectional=BIDIRECTIONAL,
-                     padding_index=PAD_INDEX,
-                     lstm_layers=LSTM_LAYERS,
-                     layer_dropout=LAYER_DROPOUT)
 
-elif MODEL_NAME == "TransformerTagger":
-    from src.nn.models import TransformerTagger
-    enc = TransformerTagger(char_vocab_size=original_tokenizer.vocab_size,
-                            tag_vocab_size=bmes_tokenizer.vocab_size,
-                            emb_dim=EMB_DIM,
-                            n_heads=NUM_HEADS,
-                            hidden_size=HIDDEN_SIZE,
-                            dropout=SPATIAL_DROPOUT,
-                            padding_index=PAD_INDEX,
-                            max_len=MAX_LEN,
-                            num_layers=NUM_LAYERS)
+    model = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
+                       tag_vocab_size=bmes_tokenizer.vocab_size,
+                       padding_index=PAD_INDEX,
+                       **model_params)
 
-elif MODEL_NAME == "LstmCrfTagger":
+elif model_name == "LstmCrfTagger":
     from src.nn.models import LstmCrfTagger
-    enc = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
-                        tag_vocab_size=bmes_tokenizer.vocab_size,
-                        emb_dim=EMB_DIM,
-                        hidden_size=HIDDEN_SIZE,
-                        spatial_dropout=SPATIAL_DROPOUT,
-                        bidirectional=True,
-                        padding_index=PAD_INDEX,
-                        lstm_layers=LSTM_LAYERS,
-                        layer_dropout=LAYER_DROPOUT)
 
-elif MODEL_NAME == "RandomTagger":
+    model = LstmCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
+                          tag_vocab_size=bmes_tokenizer.vocab_size,
+                          padding_index=PAD_INDEX,
+                          **model_params)
+
+elif model_name == "TransformerTagger":
+    from src.nn.models import TransformerTagger
+
+    model = TransformerTagger(char_vocab_size=original_tokenizer.vocab_size,
+                              tag_vocab_size=bmes_tokenizer.vocab_size,
+                              padding_index=PAD_INDEX,
+                              max_len=MAX_LEN,
+                              **model_params)
+elif model_name == "CnnTagger":
+    # TODO implement this
+    raise NotImplementedError
+    # enc = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
+    #                 tag_vocab_size=bmes_tokenizer.vocab_size,
+    #                 emb_dim=EMB_DIM,
+    #                 num_filters=300,
+    #                 kernel_size=3,
+    #                 padding_index=PAD_INDEX)
+
+elif model_name == "RandomTagger":
     # TODO improve this
-    enc = None
+    model = None
 
 else:
     raise Exception
 
 
-
-# enc = CnnTagger(char_vocab_size=original_tokenizer.vocab_size,
-#                 tag_vocab_size=bmes_tokenizer.vocab_size,
-#                 emb_dim=EMB_DIM,
-#                 num_filters=300,
-#                 kernel_size=3,
-#                 padding_index=PAD_INDEX)
-
 train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
 valid_loader = DataLoader(valid_ds, batch_size=1)
-
-# for a, b, c, d in train_loader:
-#     print(b.size())
-#     out = enc(b.squeeze(0), c.squeeze(0))
-#     print(out)
-#     break
-
 
 metrics = {"f1_score": partial(f1_score, average="weighted", zero_division=0),
            "accuracy": accuracy_score,
@@ -169,44 +170,48 @@ metrics = {"f1_score": partial(f1_score, average="weighted", zero_division=0),
 
 device = torch.device('cuda')
 
-if TRAIN_MODEL:
-
-    optimizer = torch.optim.Adam(params=enc.parameters())
-    enc.to(device)
-    training_cycle(model=enc,
+if flow_control["train_model"]:
+    print(f"Starting the training of {model_name} on {train_type} for {n_epochs} epochs...")
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr)
+    model.to(device)
+    training_cycle(model=model,
                    train_loader=train_loader,
                    validation_loader=valid_loader,
                    optimizer=optimizer,
                    device=device,
-                   clip=CLIP,
+                   clip=grad_clip,
                    metrics=metrics,
-                   epochs=EPOCHS,
-                   n_without_improvements=N_WITHOUT_IMPROVEMENTS)
+                   epochs=n_epochs,
+                   early_stopping=early_stopping,
+                   n_without_improvements=n_without_improvements,
+                   save_best=save_best,
+                   save_last=save_last)
 
-
-if MODEL_NAME == "RandomTagger":
+if model_name == "RandomTagger":
     segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
                                 bmes_tokenizer=bmes_tokenizer,
                                 labels=bmes_tokenizer.meaningful_label_indices)
 else:
     segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
                                 bmes_tokenizer=bmes_tokenizer,
-                                model=enc,
+                                model=model,
                                 device=device,
                                 seed=1)
 
-if TEST_MODEL:
+if flow_control["test_model"]:
+    print(f"\nTesting {model_name}...")
+    print(f"Writing to file: {flow_control['write_results']}")
     testing_cycle(segmenter=segmenter,
                   indices=test_indices,
                   original=test_original,
                   segmented=test_segmented,
                   original_tokenizer=original_tokenizer,
                   bmes_tokenizer=bmes_tokenizer,
-                  write_predictions=WRITE_RESULTS,
-                  write_path=RESULTS_PATH,
+                  write_predictions=flow_control["write_results"],
+                  write_path=results_path,
                   metrics=metrics,
                   device=device,
                   pad_index=PAD_INDEX,
                   unk_index=UNK_INDEX,
                   max_len=MAX_LEN,
-                  batch_size=BATCH_SIZE)
+                  batch_size=batch_size)
