@@ -42,10 +42,11 @@ lr = float(train_params["lr"])
 early_stopping = train_params["early_stopping"]
 save_best = train_params["save_best"]
 save_last = train_params["save_last"]
+seed = train_params.get("seed", None)
 
 # specific to models
-# TODO parametrize seed for models
 model_params = config["model_params"]
+
 
 if model_name == "RandomTagger":
     TRAIN_MODEL = False
@@ -153,7 +154,7 @@ elif model_name == "RandomTagger":
     model = None
 
 else:
-    raise Exception
+    raise NotImplementedError
 
 train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
 valid_loader = DataLoader(valid_ds, batch_size=1)
@@ -167,6 +168,15 @@ device = torch.device('cuda')
 
 if flow_control["train_model"]:
     print(f"Starting the training of {model_name} on {train_type} for {n_epochs} epochs...")
+
+    if seed is not None:
+        import random
+        import numpy as np
+        print(f"Setting seed: {seed}")
+        torch.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
+
     optimizer = torch.optim.Adam(params=model.parameters(), lr=lr)
     model.to(device)
     training_cycle(model=model,
@@ -191,7 +201,7 @@ else:
                                 bmes_tokenizer=bmes_tokenizer,
                                 model=model,
                                 device=device,
-                                seed=1)
+                                seed=seed)
 
 if flow_control["test_model"]:
     print(f"\nTesting {model_name}...")
