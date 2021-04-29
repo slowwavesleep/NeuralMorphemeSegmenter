@@ -33,18 +33,14 @@ class RandomSegmenter(AbstractSegmenter):
     def __init__(self,
                  original_tokenizer: SymTokenizer,
                  bmes_tokenizer: SymTokenizer,
-                 labels: List[int],
-                 seed: Optional[int] = None,
+                 model: RandomTagger,
                  *,
                  sep: str = "|"):
 
         self.sep = sep
-        self.labels = labels
-        self.seed = seed
         self.original_tokenizer = original_tokenizer
         self.bmes_tokenizer = bmes_tokenizer
-        self.tagger = RandomTagger(labels=self.labels,
-                                   seed=self.seed)
+        self.tagger = model
 
     def tag_example(self, example: str):
         encoded = self.original_tokenizer.encode(example)

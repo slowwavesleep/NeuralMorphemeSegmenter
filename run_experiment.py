@@ -42,14 +42,14 @@ lr = float(train_params["lr"])
 early_stopping = train_params["early_stopping"]
 save_best = train_params["save_best"]
 save_last = train_params["save_last"]
-seed = train_params.get("seed", None)
 
 # specific to models
 model_params = config["model_params"]
+seed = model_params.get("seed", None)
 
 
 if model_name == "RandomTagger":
-    TRAIN_MODEL = False
+    flow_control["train_model"] = False
 
 if train_type.lower() == "lemmas":
     from constants import CONVERTED_LEMMAS_PATHS
@@ -150,8 +150,9 @@ elif model_name == "TransformerTagger":
                               **model_params)
 
 elif model_name == "RandomTagger":
-    # TODO improve this
-    model = None
+    from src.nn.models import RandomTagger
+    model = RandomTagger(labels=bmes_tokenizer.meaningful_label_indices,
+                         seed=seed)
 
 else:
     raise NotImplementedError
@@ -195,7 +196,7 @@ if flow_control["train_model"]:
 if model_name == "RandomTagger":
     segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
                                 bmes_tokenizer=bmes_tokenizer,
-                                labels=bmes_tokenizer.meaningful_label_indices)
+                                model=model)
 else:
     segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
                                 bmes_tokenizer=bmes_tokenizer,

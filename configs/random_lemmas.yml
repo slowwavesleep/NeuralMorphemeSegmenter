@@ -1,0 +1,20 @@
+
+flow_control:
+  train_model: False
+  test_model: True
+  write_results: False
+
+train_params:
+  n_without_improvements: 4
+  early_stopping: True
+  save_best: True
+  save_last: True
+  train_type: "lemmas"
+  model_name: "RandomTagger"
+  batch_size: 128
+  n_epochs: 1
+  grad_clip: 3.
+  lr: 1e-03
+
+model_params:
+  seed: 1
