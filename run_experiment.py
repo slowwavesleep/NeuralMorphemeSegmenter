@@ -74,8 +74,7 @@ elif train_type.lower() == "forms":
     test_indices, test_original, test_segmented = read_converted_data(CONVERTED_FORMS_PATHS["test"])
 
 else:
-    # TODO specify exception
-    raise Exception
+    raise NotImplementedError
 
 original_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
                                   unk_index=UNK_INDEX).build_vocab(train_original)
@@ -180,12 +179,16 @@ else:
 train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
 valid_loader = DataLoader(valid_ds, batch_size=1)
 
+# TODO don't hard-code this?
 metrics = {"f1_score": partial(f1_score, average="weighted", zero_division=0),
            "accuracy": accuracy_score,
            "precision": partial(precision_score, average="weighted", zero_division=0),
            "recall": partial(recall_score, average="weighted", zero_division=0)}
 
-device = torch.device('cuda')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    raise NotImplementedError
 
 if flow_control["train_model"]:
     print(f"Starting the training of {model_name} on {train_type} for {n_epochs} epochs...")

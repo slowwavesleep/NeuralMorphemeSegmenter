@@ -1,4 +1,4 @@
-from typing import Union, Optional, List
+from typing import Optional, List
 from contextlib import contextmanager
 
 from torch import nn
@@ -162,7 +162,6 @@ class BaselineCrfTagger(nn.Module):
         predicted = np.array(self.crf.decode(scores))
 
         return predicted
-
 
 
 class LstmTagger(nn.Module):

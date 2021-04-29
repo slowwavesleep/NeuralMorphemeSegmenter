@@ -191,11 +191,8 @@ def training_cycle(model,
         #         'message': message,
         #         'train_losses': train_losses,
         #         'validation_losses': validation_losses,
-        #         'train_perplexities': train_perplexities,
-        #         'validation_perplexities': validation_perplexities
         #     }
-        #
-        #     file_object.write(json.dumps(info, indent=2))
+
     if save_best:
         print("Loading the best model...")
         model.load_state_dict(torch.load(f"{model_save_dir}/best_model_state_dict.pth"))
