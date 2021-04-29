@@ -4,12 +4,165 @@ from contextlib import contextmanager
 from torch import nn
 import torch
 from torch import Tensor
-import torch.nn.functional as F
 from torchcrf import CRF
 import numpy as np
 
-from src.nn.layers import LstmEncoder, LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, SpatialDropout, \
+from src.nn.layers import LstmEncoderPacked, LstmDecoder, LstmDecoderPacked, SpatialDropout, \
     CnnEncoder, TransformerEncoder
+
+
+class RandomTagger(nn.Module):
+
+    def __init__(self,
+                 labels: List[int],
+                 seed: Optional[int] = None):
+
+        self.labels = labels
+        self.seed = seed
+
+    def compute_outputs(self, sequences: Tensor):
+        pass
+
+    def forward(self, sequences: Tensor, labels: Tensor):
+        pass
+
+    def predict(self, sequences: Tensor) -> np.ndarray:
+        size = tuple(sequences.size())
+        with self.temp_seed(self.seed):
+            predicted = np.random.choice(a=self.labels, size=size)
+
+        return predicted
+
+    @staticmethod
+    @contextmanager
+    def temp_seed(seed):
+        state = np.random.get_state()
+        np.random.seed(seed)
+        try:
+            yield
+        finally:
+            np.random.set_state(state)
+
+
+class BaselineTagger(nn.Module):
+
+    def __init__(self,
+                 char_vocab_size: int,
+                 tag_vocab_size: int,
+                 emb_dim: int,
+                 hidden_size: int,
+                 padding_index: int):
+
+        super(BaselineTagger, self).__init__()
+        self.tag_vocab_size = tag_vocab_size
+        self.padding_index = padding_index
+
+        self.embedding = nn.Embedding(num_embeddings=char_vocab_size,
+                                      embedding_dim=emb_dim,
+                                      padding_idx=padding_index)
+
+        self.fc_1 = nn.Linear(in_features=hidden_size,
+                              out_features=hidden_size)
+        self.fc_2 = nn.Linear(in_features=hidden_size,
+                              out_features=tag_vocab_size)
+
+        self.loss = torch.nn.CrossEntropyLoss(
+            ignore_index=self.padding_index,
+            reduction='none')
+
+    def compute_outputs(self, sequences, true_lengths):
+        sequences = self.embedding(sequences)
+        sequences = self.fc_1(sequences)
+        sequences = torch.relu(sequences)
+        sequences = self.fc_2(sequences)
+        sequences = torch.relu(sequences)
+        return sequences
+
+    def forward(self, sequences, labels, true_lengths):
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        scores = scores.view(-1, self.tag_vocab_size)
+        labels = labels.view(-1)
+
+        pad_mask = (sequences != self.padding_index).float()
+
+        loss = self.loss(scores, labels)
+        loss = loss.view(sequences.size(0), sequences.size(1))
+        loss *= pad_mask
+        loss = torch.sum(loss, axis=1)
+        loss /= true_lengths
+        loss = torch.mean(loss)
+
+        return loss
+
+    def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
+        if true_lengths is None:
+            print("True lengths of sequences not specified!")
+            true_lengths = [sequences.size(1)] * sequences.size(0)
+            true_lengths = torch.tensor(true_lengths).long()
+
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        predicted = scores.argmax(dim=2)
+
+        return predicted.cpu().numpy()
+
+
+class BaselineCrfTagger(nn.Module):
+
+    def __init__(self,
+                 char_vocab_size: int,
+                 tag_vocab_size: int,
+                 emb_dim: int,
+                 hidden_size: int,
+                 padding_index: int):
+
+        super(BaselineCrfTagger, self).__init__()
+        self.tag_vocab_size = tag_vocab_size
+        self.padding_index = padding_index
+
+        self.embedding = nn.Embedding(num_embeddings=char_vocab_size,
+                                      embedding_dim=emb_dim,
+                                      padding_idx=padding_index)
+
+        self.fc_1 = nn.Linear(in_features=hidden_size,
+                              out_features=hidden_size)
+        self.fc_2 = nn.Linear(in_features=hidden_size,
+                              out_features=tag_vocab_size)
+
+        self.crf = CRF(self.tag_vocab_size, batch_first=True)
+
+    def compute_outputs(self, sequences, true_lengths):
+        pad_mask = (sequences == self.padding_index).float()
+
+        sequences = self.embedding(sequences)
+        sequences = self.fc_1(sequences)
+        sequences = torch.relu(sequences)
+        sequences = self.fc_2(sequences)
+        sequences = torch.relu(sequences)
+
+        sequences[:, :, self.padding_index] += pad_mask * 10000
+
+        return sequences
+
+    def forward(self, sequences, labels, true_lengths):
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        loss = -self.crf(scores, labels, reduction="mean")
+
+        return loss
+
+    def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
+        if true_lengths is None:
+            print("True lengths of sequences not specified!")
+            true_lengths = [sequences.size(1)] * sequences.size(0)
+            true_lengths = torch.tensor(true_lengths).long()
+
+        scores = self.compute_outputs(sequences, true_lengths)
+        predicted = np.array(self.crf.decode(scores))
+
+        return predicted
+
 
 
 class LstmTagger(nn.Module):
@@ -388,38 +541,4 @@ class TransformerTagger(nn.Module):
         predicted = scores.argmax(dim=2)
 
         return predicted.cpu().numpy()
-
-
-class RandomTagger(nn.Module):
-
-    def __init__(self,
-                 labels: List[int],
-                 seed: Optional[int] = None):
-
-        self.labels = labels
-        self.seed = seed
-
-    def compute_outputs(self, sequences: Tensor):
-        pass
-
-    def forward(self, sequences: Tensor, labels: Tensor):
-        pass
-
-    def predict(self, sequences: Tensor) -> np.ndarray:
-        size = tuple(sequences.size())
-        with self.temp_seed(self.seed):
-            predicted = np.random.choice(a=self.labels, size=size)
-
-        return predicted
-
-    @staticmethod
-    @contextmanager
-    def temp_seed(seed):
-        state = np.random.get_state()
-        np.random.seed(seed)
-        try:
-            yield
-        finally:
-            np.random.set_state(state)
-
 

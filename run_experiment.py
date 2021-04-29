@@ -9,7 +9,6 @@ from yaml import safe_load
 
 from constants import UNK_INDEX, PAD_INDEX, MAX_LEN
 from src.utils.etc import read_converted_data
-from src.utils.tokenizers import SymTokenizer, bmes2sequence
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
 from src.nn.testing_process import testing_cycle
@@ -42,10 +41,13 @@ lr = float(train_params["lr"])
 early_stopping = train_params["early_stopping"]
 save_best = train_params["save_best"]
 save_last = train_params["save_last"]
+seed = train_params.get("seed", None)
 
-# specific to models
-model_params = config["model_params"]
-seed = model_params.get("seed", None)
+if model_name != "RandomTagger":
+    # specific to models
+    model_params = config["model_params"]
+else:
+    model_params = None
 
 
 if model_name == "RandomTagger":
@@ -107,7 +109,24 @@ if model_params:
     for key, value in model_params.items():
         print(f"    {key}: {value}")
 
-if model_name == "LstmTagger":
+if model_name == "BaselineTagger":
+    from src.nn.models import BaselineTagger
+
+    model = BaselineTagger(char_vocab_size=original_tokenizer.vocab_size,
+                           tag_vocab_size=bmes_tokenizer.vocab_size,
+                           padding_index=PAD_INDEX,
+                           **model_params)
+
+elif model_name == "BaselineCrfTagger":
+    from src.nn.models import BaselineCrfTagger
+
+    model = BaselineCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
+                              tag_vocab_size=bmes_tokenizer.vocab_size,
+                              padding_index=PAD_INDEX,
+                              **model_params)
+
+
+elif model_name == "LstmTagger":
     from src.nn.models import LstmTagger
 
     model = LstmTagger(char_vocab_size=original_tokenizer.vocab_size,
@@ -151,6 +170,7 @@ elif model_name == "TransformerTagger":
 
 elif model_name == "RandomTagger":
     from src.nn.models import RandomTagger
+
     model = RandomTagger(labels=bmes_tokenizer.meaningful_label_indices,
                          seed=seed)
 
@@ -173,6 +193,7 @@ if flow_control["train_model"]:
     if seed is not None:
         import random
         import numpy as np
+
         print(f"Setting seed: {seed}")
         torch.manual_seed(seed)
         random.seed(seed)

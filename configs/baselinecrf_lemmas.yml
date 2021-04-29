@@ -1,6 +1,6 @@
 
 flow_control:
-  train_model: False
+  train_model: True
   test_model: True
   write_results: False
 
@@ -10,9 +10,12 @@ train_params:
   save_best: False
   save_last: False
   train_type: "lemmas"
-  model_name: "RandomTagger"
+  model_name: "BaselineCrfTagger"
   batch_size: 128
-  n_epochs: 1
+  n_epochs: 5
   grad_clip: 3.
   lr: 1e-03
-  seed: 1
+
+model_params:
+  hidden_size: 512
+  emb_dim: 512
