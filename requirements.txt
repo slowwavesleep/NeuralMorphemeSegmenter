@@ -3,3 +3,4 @@ tqdm~=4.54.1
 scikit-learn~=0.24.1
 yaml~=0.2.5
 pyyaml>=5.4
+torch~=1.4.0
