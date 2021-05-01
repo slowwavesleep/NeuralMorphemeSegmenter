@@ -49,7 +49,6 @@ if model_name != "RandomTagger":
 else:
     model_params = None
 
-
 if model_name == "RandomTagger":
     flow_control["train_model"] = False
 
@@ -166,6 +165,15 @@ elif model_name == "TransformerTagger":
                               padding_index=PAD_INDEX,
                               max_len=MAX_LEN,
                               **model_params)
+
+elif model_name == "TransformerCrfTagger":
+    from src.nn.models import TransformerCrfTagger
+
+    model = TransformerCrfTagger(char_vocab_size=original_tokenizer.vocab_size,
+                                 tag_vocab_size=bmes_tokenizer.vocab_size,
+                                 padding_index=PAD_INDEX,
+                                 max_len=MAX_LEN,
+                                 **model_params)
 
 elif model_name == "RandomTagger":
     from src.nn.models import RandomTagger

@@ -511,6 +511,82 @@ class TransformerTagger(nn.Module):
     def forward(self, sequences, labels, true_lengths):
         scores = self.compute_outputs(sequences, true_lengths)
 
+        loss = -self.crf(scores, labels, reduction="mean")
+
+        return loss
+
+    def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
+        if true_lengths is None:
+            print("True lengths of sequences not specified!")
+            true_lengths = [sequences.size(1)] * sequences.size(0)
+            true_lengths = torch.tensor(true_lengths).long()
+
+        scores = self.compute_outputs(sequences, true_lengths)
+
+        predicted = scores.argmax(dim=2)
+
+        return predicted.cpu().numpy()
+
+
+class TransformerCrfTagger(nn.Module):
+
+    def __init__(self,
+                 char_vocab_size,
+                 tag_vocab_size,
+                 emb_dim,
+                 n_heads,
+                 hidden_size,
+                 dropout,
+                 padding_index,
+                 max_len,
+                 num_layers):
+        super(TransformerCrfTagger, self).__init__()
+
+        self.tag_vocab_size = tag_vocab_size
+        self.padding_index = padding_index
+
+        self.transformer_encoder = TransformerEncoder(vocab_size=char_vocab_size,
+                                                      emb_dim=emb_dim,
+                                                      n_heads=n_heads,
+                                                      hidden_size=hidden_size,
+                                                      dropout=dropout,
+                                                      padding_index=self.padding_index,
+                                                      max_len=max_len,
+                                                      num_layers=num_layers)
+
+        self.fc = nn.Linear(in_features=emb_dim,
+                            out_features=tag_vocab_size)
+
+        self.loss = torch.nn.CrossEntropyLoss(
+            ignore_index=self.padding_index,
+            reduction='none')
+
+        self.crf = CRF(self.tag_vocab_size, batch_first=True)
+
+        self.init_weights()
+
+    def init_weights(self):
+        init_range = 0.1
+        self.transformer_encoder.embedding.weight.data.uniform_(-init_range, init_range)
+        self.fc.bias.data.zero_()
+        self.fc.weight.data.uniform_(-init_range, init_range)
+
+    @staticmethod
+    def generate_square_subsequent_mask(sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
+
+    def compute_outputs(self, sequences, true_lengths):
+        mask = sequences.ne(self.padding_index)
+        sequences = self.transformer_encoder(sequences, mask)
+        sequences = self.fc(sequences)
+
+        return sequences
+
+    def forward(self, sequences, labels, true_lengths):
+        scores = self.compute_outputs(sequences, true_lengths)
+
         scores = scores.view(-1, self.tag_vocab_size)
         labels = labels.view(-1)
 
@@ -532,7 +608,6 @@ class TransformerTagger(nn.Module):
             true_lengths = torch.tensor(true_lengths).long()
 
         scores = self.compute_outputs(sequences, true_lengths)
+        predicted = np.array(self.crf.decode(scores))
 
-        predicted = scores.argmax(dim=2)
-
-        return predicted.cpu().numpy()
+        return predicted
