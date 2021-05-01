@@ -4,3 +4,4 @@ scikit-learn~=0.24.1
 yaml~=0.2.5
 pyyaml>=5.4
 torch~=1.4.0
+pytorch-crf~=0.7.2
