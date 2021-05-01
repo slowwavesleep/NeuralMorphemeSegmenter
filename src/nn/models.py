@@ -52,7 +52,6 @@ class BaselineTagger(nn.Module):
                  emb_dim: int,
                  hidden_size: int,
                  padding_index: int):
-
         super(BaselineTagger, self).__init__()
         self.tag_vocab_size = tag_vocab_size
         self.padding_index = padding_index
@@ -116,7 +115,6 @@ class BaselineCrfTagger(nn.Module):
                  emb_dim: int,
                  hidden_size: int,
                  padding_index: int):
-
         super(BaselineCrfTagger, self).__init__()
         self.tag_vocab_size = tag_vocab_size
         self.padding_index = padding_index
@@ -331,7 +329,6 @@ class CnnTagger(nn.Module):
                  kernel_size: int,
                  spatial_dropout: float = 0.,
                  padding_index: int = 0):
-
         super(CnnTagger, self).__init__()
         self.tag_vocab_size = tag_vocab_size
         self.padding_index = padding_index
@@ -402,7 +399,6 @@ class CnnCrfTagger(nn.Module):
                  kernel_size: int,
                  spatial_dropout: float = 0.,
                  padding_index: int = 0):
-
         super(CnnCrfTagger, self).__init__()
         self.tag_vocab_size = tag_vocab_size
         self.padding_index = padding_index
@@ -484,7 +480,7 @@ class TransformerTagger(nn.Module):
                                                       max_len=max_len,
                                                       num_layers=num_layers)
 
-        self.fc = nn.Linear(in_features=hidden_size,
+        self.fc = nn.Linear(in_features=emb_dim,
                             out_features=tag_vocab_size)
 
         self.loss = torch.nn.CrossEntropyLoss(
@@ -506,7 +502,7 @@ class TransformerTagger(nn.Module):
         return mask
 
     def compute_outputs(self, sequences, true_lengths):
-        mask = self.generate_square_subsequent_mask(sequences.size(1)).cuda().transpose(0, 1)
+        mask = sequences.ne(self.padding_index)
         sequences = self.transformer_encoder(sequences, mask)
         sequences = self.fc(sequences)
 
@@ -540,4 +536,3 @@ class TransformerTagger(nn.Module):
         predicted = scores.argmax(dim=2)
 
         return predicted.cpu().numpy()
-

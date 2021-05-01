@@ -182,7 +182,7 @@ def training_cycle(model,
 
         if save_last:
             print(f"Saving the current state...")
-            torch.save(model.state_dict(), f"{model_save_dir}/last_language_model_state_dict.pth")
+            torch.save(model.state_dict(), f"{model_save_dir}/last_model_state_dict.pth")
             torch.save(optimizer.state_dict(), f"{model_save_dir}/last_optimizer_state_dict.pth")
 
         # with open(f'logs/info_{n_epoch}.json', 'w') as file_object:

@@ -11,14 +11,14 @@ train_params:
   save_last: True
   train_type: "lemmas"
   model_name: "TransformerTagger"
-  batch_size: 128
+  batch_size: 256
   n_epochs: 1
   grad_clip: 3.
-  lr: 1e-05
+  lr: 3e-04
 
 model_params:
-  hidden_size: 512
-  emb_dim: 512
+  hidden_size: 2048
+  emb_dim: 1024
   dropout: 0.1
   n_heads: 8
   num_layers: 8
