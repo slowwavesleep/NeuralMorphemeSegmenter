@@ -124,7 +124,7 @@ def training_cycle(experiment_id: str,
     best_accuracy = 0.
 
     model_save_dir = f"./models/{model_name}/{experiment_id}"
-    if (save_last or save_best) and os.path.exists(model_save_dir):
+    if (save_last or save_best) and not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
     if write_log and not log_save_dir:
@@ -184,7 +184,7 @@ def training_cycle(experiment_id: str,
         if early_stopping and impatience > n_without_improvements:
             print(f"Early stopping because there was no improvement for {impatience} epochs")
             if write_log:
-                with open(f"{log_save_dir}/best_score.jsonl", "w") as file:
+                with open(f"{log_save_dir}/best_score.json", "w") as file:
                     info = {"best_accuracy": best_accuracy,
                             "n_epoch": n_epoch,
                             "stopped_early": True}
@@ -210,8 +210,8 @@ def training_cycle(experiment_id: str,
         model.load_state_dict(torch.load(f"{model_save_dir}/best_model_state_dict.pth"))
 
     if write_log:
-        with open(f"{log_save_dir}/best_train_score.jsonl", "w") as file:
+        with open(f"{log_save_dir}/best_train_score.json", "w") as file:
             info = {"best_accuracy": best_accuracy,
                     "n_epoch": n_epoch,
                     "stopped_early": False}
-            file.write(json.dumps(info) + "\n")
+            file.write(json.dumps(info, indent=4))

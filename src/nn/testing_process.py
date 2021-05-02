@@ -78,9 +78,9 @@ def testing_cycle(experiment_id: str,
     print(message)
 
     if write_log:
-        with open(f"{log_save_dir}/test_log.jsonl", "a") as file:
+        with open(f"{log_save_dir}/test_log.json", "w") as file:
             info = overall_scores
-            file.write(json.dumps(info) + "\n")
+            file.write(json.dumps(info, indent=4))
 
     file_path = Path(write_path)
     file_path.mkdir(parents=True, exist_ok=True)

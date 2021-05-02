@@ -1,3 +1,4 @@
+import json
 from functools import partial
 import argparse
 import os
@@ -265,6 +266,12 @@ if flow_control["train_model"]:
                    save_last=save_last,
                    write_log=write_log,
                    log_save_dir=log_save_dir)
+
+    if write_log:
+        with open(f"{log_save_dir}/config.json", "w") as file:
+            info = {"train_params": train_params,
+                    "model_params": model_params}
+            file.write(json.dumps(info, indent=4))
 
 if model_name == "RandomTagger":
     segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
