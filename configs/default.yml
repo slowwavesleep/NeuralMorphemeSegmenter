@@ -13,7 +13,7 @@ train_params:
   train_type: "lemmas"
   model_name: "LstmCrfTagger"
   batch_size: 128
-  n_epochs: 2
+  n_epochs: 1
   grad_clip: 3.
   lr: 1e-03
 

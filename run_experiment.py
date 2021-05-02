@@ -228,7 +228,8 @@ if flow_control["train_model"]:
                    early_stopping=early_stopping,
                    n_without_improvements=n_without_improvements,
                    save_best=save_best,
-                   save_last=save_last)
+                   save_last=save_last,
+                   write_log=write_log)
 
 if model_name == "RandomTagger":
     segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
