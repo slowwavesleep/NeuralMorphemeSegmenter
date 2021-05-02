@@ -11,7 +11,7 @@ from src.utils.datasets import BmesSegmentationDataset
 from src.utils.metrics import evaluate_batch
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.nn.training_process import evaluate
-from src.utils.tokenizers import sequence2bmes
+from src.utils.tokenizers import sequence2bmes, SymTokenizer
 
 
 def testing_cycle(experiment_id: str,
@@ -19,8 +19,8 @@ def testing_cycle(experiment_id: str,
                   indices: List[int],
                   original: List[str],
                   segmented: List[str],
-                  original_tokenizer,
-                  bmes_tokenizer,
+                  original_tokenizer: SymTokenizer,
+                  bmes_tokenizer: SymTokenizer,
                   metrics: dict,
                   device: object,
                   pad_index: int,
@@ -86,24 +86,29 @@ def testing_cycle(experiment_id: str,
     file_path.mkdir(parents=True, exist_ok=True)
     file_path = file_path / "test.jsonl"
 
+
+def write_predictions_to_file():
+    # TODO move write predictions here
+    pass
     # TODO refactor to use batches
     # predicted_segmentation = segmenter.tag_batch(original)
-    if write_predictions and write_path:
-        print("Writing results to file...")
-        with open(file_path, "w") as file:
-        #     for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
-            for index, example, target in zip(indices, original, segmented):
-                output = {"index": index,
-                          "original": example,
-                          "segmented": sequence2bmes(target),
-                          "predicted": segmenter.tag_example(example),
-                          "correct": sequence2bmes(target) == segmenter.tag_example(example)}
-
-                file.write(json.dumps(output, ensure_ascii=False) + "\n")
-    elif write_predictions and not write_path:
-        print("No write path was specified!")
-    else:
-        pass
+    # print(predicted_segmentation)
+    # if write_predictions and write_path:
+    #     print("Writing results to file...")
+    #     with open(file_path, "w") as file:
+    #     #     for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
+    #         for index, example, target in zip(indices, original, segmented):
+    #             output = {"index": index,
+    #                       "original": example,
+    #                       "segmented": sequence2bmes(target),
+    #                       "predicted": segmenter.tag_example(example),
+    #                       "correct": sequence2bmes(target) == segmenter.tag_example(example)}
+    #
+    #             file.write(json.dumps(output, ensure_ascii=False) + "\n")
+    # elif write_predictions and not write_path:
+    #     print("No write path was specified!")
+    # else:
+    #     pass
 
 
 def evaluate_random_baseline(data_loader: DataLoader,
