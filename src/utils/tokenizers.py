@@ -100,6 +100,7 @@ class SymTokenizer:
             data = json.loads(file.read())
 
         self._index2sym = data["index2sym"]
+        self._index2sym = {int(key): value for key, value in self._index2sym.items()}
         self._sym2index = data["sym2index"]
         self.meaningful_label_indices = data["meaningful_label_indices"]
 

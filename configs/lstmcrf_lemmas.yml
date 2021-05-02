@@ -4,6 +4,7 @@ flow_control:
   test_model: True
   write_results: False
   write_log: True
+  initialize_tokenizers: False
 
 train_params:
   n_without_improvements: 4

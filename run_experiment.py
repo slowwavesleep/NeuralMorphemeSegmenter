@@ -269,7 +269,8 @@ if flow_control["train_model"]:
 
     if write_log:
         with open(f"{log_save_dir}/config.json", "w") as file:
-            info = {"train_params": train_params,
+            info = {"experiment_id": experiment_id,
+                    "train_params": train_params,
                     "model_params": model_params}
             file.write(json.dumps(info, indent=4))
 
