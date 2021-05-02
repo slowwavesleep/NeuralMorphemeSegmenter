@@ -1,3 +1,4 @@
+import json
 from typing import List, Tuple, Dict
 
 
@@ -92,6 +93,32 @@ class SymTokenizer:
         self._vocab_flag = True
 
         return self
+
+    def vocab_from_file(self,
+                        path: str):
+        with open(path) as file:
+            data = json.loads(file.read())
+
+        self._index2sym = data["index2sym"]
+        self._sym2index = data["sym2index"]
+        self.meaningful_label_indices = data["meaningful_label_indices"]
+
+        if self._sym2index["<PAD>"] != self.pad_index or self._sym2index["<UNK>"] != self.unk_index:
+            raise ValueError("Token index mismatch")
+
+        self._vocab_flag = True
+
+        return self
+
+    def vocab_to_file(self,
+                      path: str):
+        with open(path, "w") as file:
+            data = {"index2sym": self._index2sym,
+                    "sym2index": self._sym2index,
+                    "meaningful_label_indices": self.meaningful_label_indices}
+            file.write(json.dumps(data,
+                                  ensure_ascii=False,
+                                  indent=4))
 
     @property
     def labels(self) -> dict:

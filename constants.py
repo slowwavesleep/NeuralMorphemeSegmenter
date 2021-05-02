@@ -13,6 +13,8 @@ CONVERTED_FORMS_PATHS = {"train": "data/converted_forms/forms_train.jsonl",
                          "valid": "data/converted_forms/forms_valid.jsonl",
                          "test": "data/converted_forms/forms_test.jsonl"}
 
+TOKENIZERS_DIR = "./tokenizers"
+
 PAD_INDEX = 0
 UNK_INDEX = 1
 MAX_LEN = 36

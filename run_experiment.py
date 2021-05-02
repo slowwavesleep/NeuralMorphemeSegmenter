@@ -8,7 +8,7 @@ import torch
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from yaml import safe_load
 
-from constants import UNK_INDEX, PAD_INDEX, MAX_LEN
+from constants import UNK_INDEX, PAD_INDEX, MAX_LEN, TOKENIZERS_DIR
 from src.utils.etc import read_converted_data
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
@@ -33,6 +33,8 @@ experiment_id: str = uuid.uuid4().hex
 flow_control: dict = config["flow_control"]
 train_params: dict = config["train_params"]
 write_log: bool = flow_control.get("write_log", False)
+# allows reinitialization of tokenizers' vocabs from scratch
+initialize_tokenizers: bool = flow_control.get("initialize_tokenizers", False)
 
 # train parameters
 batch_size = train_params["batch_size"]
@@ -79,12 +81,36 @@ elif train_type.lower() == "forms":
 else:
     raise NotImplementedError
 
-original_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
-                                  unk_index=UNK_INDEX).build_vocab(train_original)
+# preparing tokenizers
+original_tokenizer_path = f"{TOKENIZERS_DIR}/original.json"
+bmes_tokenizer_path = f"{TOKENIZERS_DIR}/bmes.json"
 
-bmes_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
-                              unk_index=UNK_INDEX,
-                              convert_to_bmes=True).build_vocab(train_segmented)
+# initialize from scratch
+if initialize_tokenizers or not (os.path.exists(original_tokenizer_path) and os.path.exists(bmes_tokenizer_path)):
+
+    if not os.path.exists(TOKENIZERS_DIR):
+        os.makedirs(TOKENIZERS_DIR)
+
+    original_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
+                                      unk_index=UNK_INDEX).build_vocab(train_original)
+
+    original_tokenizer.vocab_to_file(original_tokenizer_path)
+
+    bmes_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
+                                  unk_index=UNK_INDEX,
+                                  convert_to_bmes=True).build_vocab(train_segmented)
+
+    bmes_tokenizer.vocab_to_file(bmes_tokenizer_path)
+
+# load existing vocab
+else:
+    original_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
+                                      unk_index=UNK_INDEX).vocab_from_file(original_tokenizer_path)
+
+    bmes_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
+                                  unk_index=UNK_INDEX,
+                                  convert_to_bmes=True).vocab_from_file(bmes_tokenizer_path)
+
 
 train_ds = BmesSegmentationDataset(indices=train_indices,
                                    original=train_original,
