@@ -59,7 +59,7 @@ if model_name == "RandomTagger":
 if train_type.lower() == "lemmas":
     from constants import CONVERTED_LEMMAS_PATHS
 
-    results_path = f"data/results/lemmas/{model_name}/"
+    results_path = f"data/results/lemmas/{model_name}/{experiment_id}"
     if not os.path.exists(results_path):
         os.makedirs(results_path)
     train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
@@ -69,7 +69,7 @@ if train_type.lower() == "lemmas":
 elif train_type.lower() == "forms":
     from constants import CONVERTED_FORMS_PATHS
 
-    results_path = f"data/results/forms/{model_name}"
+    results_path = f"data/results/forms/{model_name}/{experiment_id}"
     if not os.path.exists(results_path):
         os.makedirs(results_path)
     train_indices, train_original, train_segmented = read_converted_data(CONVERTED_FORMS_PATHS["train"])
@@ -202,6 +202,13 @@ if torch.cuda.is_available():
 else:
     raise NotImplementedError
 
+if write_log:
+    log_save_dir = f"./logs/{model_name}/{experiment_id}"
+    if not os.path.exists(log_save_dir):
+        os.makedirs(log_save_dir)
+else:
+    log_save_dir = None
+
 if flow_control["train_model"]:
     print(f"Starting the training of {model_name} on {train_type} for {n_epochs} epochs...")
 
@@ -216,6 +223,7 @@ if flow_control["train_model"]:
 
     optimizer = torch.optim.Adam(params=model.parameters(), lr=lr)
     model.to(device)
+
     training_cycle(experiment_id=experiment_id,
                    model=model,
                    train_loader=train_loader,
@@ -229,7 +237,8 @@ if flow_control["train_model"]:
                    n_without_improvements=n_without_improvements,
                    save_best=save_best,
                    save_last=save_last,
-                   write_log=write_log)
+                   write_log=write_log,
+                   log_save_dir=log_save_dir)
 
 if model_name == "RandomTagger":
     segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
@@ -245,7 +254,8 @@ else:
 if flow_control["test_model"]:
     print(f"\nTesting {model_name}...")
     print(f"Writing to file: {flow_control['write_results']}")
-    testing_cycle(segmenter=segmenter,
+    testing_cycle(experiment_id=experiment_id,
+                  segmenter=segmenter,
                   indices=test_indices,
                   original=test_original,
                   segmented=test_segmented,
@@ -258,4 +268,6 @@ if flow_control["test_model"]:
                   pad_index=PAD_INDEX,
                   unk_index=UNK_INDEX,
                   max_len=MAX_LEN,
-                  batch_size=batch_size)
+                  batch_size=batch_size,
+                  write_log=write_log,
+                  log_save_dir=log_save_dir)

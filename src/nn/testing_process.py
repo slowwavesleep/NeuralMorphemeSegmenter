@@ -1,3 +1,4 @@
+import os
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -13,7 +14,8 @@ from src.nn.training_process import evaluate
 from src.utils.tokenizers import sequence2bmes
 
 
-def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
+def testing_cycle(experiment_id: str,
+                  segmenter: Union[RandomSegmenter, NeuralSegmenter],
                   indices: List[int],
                   original: List[str],
                   segmented: List[str],
@@ -26,7 +28,17 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
                   batch_size: int,
                   write_predictions: bool = False,
                   write_path: Optional[str] = None,
-                  max_len: Optional[int] = None):
+                  max_len: Optional[int] = None,
+                  write_log: bool = True,
+                  log_save_dir: Optional[str] = None):
+
+    model_name = segmenter.tagger.__class__.__name__
+
+    if write_log and not log_save_dir:
+        log_save_dir = f"./logs/{model_name}/{experiment_id}"
+        if not os.path.exists(log_save_dir):
+            os.makedirs(log_save_dir)
+
     if not max_len:
         max_len = max([len(example)] for example in original)
 
@@ -65,6 +77,11 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
 
     print(message)
 
+    if write_log:
+        with open(f"{log_save_dir}/test_log.jsonl", "a") as file:
+            info = overall_scores
+            file.write(json.dumps(info) + "\n")
+
     file_path = Path(write_path)
     file_path.mkdir(parents=True, exist_ok=True)
     file_path = file_path / "test.jsonl"
@@ -72,6 +89,7 @@ def testing_cycle(segmenter: Union[RandomSegmenter, NeuralSegmenter],
     # TODO refactor to use batches
     # predicted_segmentation = segmenter.tag_batch(original)
     if write_predictions and write_path:
+        print("Writing results to file...")
         with open(file_path, "w") as file:
         #     for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
             for index, example, target in zip(indices, original, segmented):

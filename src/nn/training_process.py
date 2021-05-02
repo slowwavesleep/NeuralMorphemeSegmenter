@@ -111,7 +111,8 @@ def training_cycle(experiment_id: str,
                    early_stopping: bool = True,
                    save_best: bool = True,
                    save_last: bool = True,
-                   write_log: bool = True):
+                   write_log: bool = True,
+                   log_save_dir: Optional[str] = None):
 
     model_name = model.__class__.__name__
 
@@ -128,7 +129,7 @@ def training_cycle(experiment_id: str,
         if not os.path.exists(model_save_dir):
             os.makedirs(model_save_dir)
 
-    if write_log:
+    if write_log and not log_save_dir:
         log_save_dir = f"./logs/{model_name}/{experiment_id}"
         if not os.path.exists(log_save_dir):
             os.makedirs(log_save_dir)
