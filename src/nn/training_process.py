@@ -1,3 +1,4 @@
+import json
 import os
 from collections import defaultdict
 from typing import Callable, Dict, Optional, Tuple
@@ -97,18 +98,20 @@ def evaluate(model: Module,
     return losses, epoch_scores, batch_scores
 
 
-def training_cycle(model,
-                   train_loader,
-                   validation_loader,
+def training_cycle(experiment_id: str,
+                   model: Module,
+                   train_loader: DataLoader,
+                   validation_loader: DataLoader,
                    optimizer,
-                   device,
-                   clip,
+                   device: torch.device,
+                   clip: float,
                    metrics: Optional[Dict[str, Callable]] = None,
                    epochs: int = 1,
                    n_without_improvements: int = 2,
                    early_stopping: bool = True,
                    save_best: bool = True,
-                   save_last: bool = True):
+                   save_last: bool = True,
+                   write_log: bool = True):
 
     model_name = model.__class__.__name__
 
@@ -119,13 +122,16 @@ def training_cycle(model,
 
     best_accuracy = 0.
 
-    model_save_dir = f"./models/{model_name}"
+    if save_last or save_best:
+        model_save_dir = f"./models/{model_name}/{experiment_id}"
 
-    if not os.path.exists(model_save_dir):
-        os.makedirs(model_save_dir)
+        if not os.path.exists(model_save_dir):
+            os.makedirs(model_save_dir)
 
-    # if not os.path.exists('./logs'):
-    #     os.makedirs('./logs')
+    if write_log:
+        log_save_dir = f"./logs/{model_name}/{experiment_id}"
+        if not os.path.exists(log_save_dir):
+            os.makedirs(log_save_dir)
 
     for n_epoch in range(1, epochs + 1):
         epoch_train_losses = train(model, train_loader, optimizer, device, clip)
@@ -178,6 +184,12 @@ def training_cycle(model,
 
         if early_stopping and impatience > n_without_improvements:
             print(f"Early stopping because there was no improvement for {impatience} epochs")
+            if write_log:
+                with open(f"{log_save_dir}/best_score.jsonl", "w") as file:
+                    info = {"best_accuracy": best_accuracy,
+                            "n_epoch": n_epoch,
+                            "stopped_early": True}
+                    file.write(json.dumps(info) + "\n")
             break
 
         if save_last:
@@ -185,14 +197,22 @@ def training_cycle(model,
             torch.save(model.state_dict(), f"{model_save_dir}/last_model_state_dict.pth")
             torch.save(optimizer.state_dict(), f"{model_save_dir}/last_optimizer_state_dict.pth")
 
-        # with open(f'logs/info_{n_epoch}.json', 'w') as file_object:
-        #
-        #     info = {
-        #         'message': message,
-        #         'train_losses': train_losses,
-        #         'validation_losses': validation_losses,
-        #     }
+        if write_log:
+            with open(f"{log_save_dir}/train_log.jsonl", "a") as file:
+                info = {"n_epoch": n_epoch,
+                        "mean_train_loss": mean_train_loss,
+                        "mean_validation_loss": mean_validation_loss,
+                        "impatience": impatience,
+                        **epoch_scores}
+                file.write(json.dumps(info) + "\n")
 
     if save_best:
         print("Loading the best model...")
         model.load_state_dict(torch.load(f"{model_save_dir}/best_model_state_dict.pth"))
+
+    if write_log:
+        with open(f"{log_save_dir}/best_train_score.jsonl", "w") as file:
+            info = {"best_accuracy": best_accuracy,
+                    "n_epoch": n_epoch,
+                    "stopped_early": False}
+            file.write(json.dumps(info) + "\n")

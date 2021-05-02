@@ -1,6 +1,7 @@
 from functools import partial
 import argparse
 import os
+import uuid
 
 from torch.utils.data import DataLoader
 import torch
@@ -27,8 +28,11 @@ else:
 with open(config_path) as file:
     config = safe_load(file)
 
-flow_control = config["flow_control"]
-train_params = config["train_params"]
+experiment_id: str = uuid.uuid4().hex
+
+flow_control: dict = config["flow_control"]
+train_params: dict = config["train_params"]
+write_log: bool = flow_control.get("write_log", False)
 
 # train parameters
 batch_size = train_params["batch_size"]
@@ -194,7 +198,7 @@ metrics = {"f1_score": partial(f1_score, average="weighted", zero_division=0),
            "recall": partial(recall_score, average="weighted", zero_division=0)}
 
 if torch.cuda.is_available():
-    device = torch.device('cuda')
+    device = torch.device("cuda")
 else:
     raise NotImplementedError
 
@@ -212,7 +216,8 @@ if flow_control["train_model"]:
 
     optimizer = torch.optim.Adam(params=model.parameters(), lr=lr)
     model.to(device)
-    training_cycle(model=model,
+    training_cycle(experiment_id=experiment_id,
+                   model=model,
                    train_loader=train_loader,
                    validation_loader=valid_loader,
                    optimizer=optimizer,
