@@ -123,11 +123,9 @@ def training_cycle(experiment_id: str,
 
     best_accuracy = 0.
 
-    if save_last or save_best:
-        model_save_dir = f"./models/{model_name}/{experiment_id}"
-
-        if not os.path.exists(model_save_dir):
-            os.makedirs(model_save_dir)
+    model_save_dir = f"./models/{model_name}/{experiment_id}"
+    if (save_last or save_best) and os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
 
     if write_log and not log_save_dir:
         log_save_dir = f"./logs/{model_name}/{experiment_id}"
