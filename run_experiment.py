@@ -57,11 +57,13 @@ else:
     model_params = None
 
 if model_name == "RandomTagger":
+    # random tagger can't be trained
     flow_control["train_model"] = False
 
 if train_type.lower() not in ("forms", "lemmas"):
     raise NotImplementedError
 
+# load the relevant data
 results_path = f"data/results/{train_type.lower()}/{model_name}/{experiment_id}"
 if not os.path.exists(results_path):
     os.makedirs(results_path)
@@ -70,7 +72,7 @@ train_indices, train_original, train_segmented = read_converted_data(DATA_PATHS[
 valid_indices, valid_original, valid_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["valid"])
 test_indices, test_original, test_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["test"])
 
-# preparing tokenizers
+# prepare the tokenizers
 original_tokenizer_path = f"{TOKENIZERS_DIR}/original.json"
 bmes_tokenizer_path = f"{TOKENIZERS_DIR}/bmes.json"
 
@@ -91,7 +93,7 @@ if initialize_tokenizers or not (os.path.exists(original_tokenizer_path) and os.
 
     bmes_tokenizer.vocab_to_file(bmes_tokenizer_path)
 
-# load existing vocab
+# or load existing vocab
 else:
     original_tokenizer = SymTokenizer(pad_index=PAD_INDEX,
                                       unk_index=UNK_INDEX).vocab_from_file(original_tokenizer_path)
@@ -100,7 +102,7 @@ else:
                                   unk_index=UNK_INDEX,
                                   convert_to_bmes=True).vocab_from_file(bmes_tokenizer_path)
 
-
+# initialize sequence bucketing datasets
 train_ds = BmesSegmentationDataset(indices=train_indices,
                                    original=train_original,
                                    segmented=train_segmented,
@@ -120,6 +122,17 @@ valid_ds = BmesSegmentationDataset(indices=valid_indices,
                                    unk_index=UNK_INDEX,
                                    max_len=MAX_LEN,
                                    batch_size=batch_size)
+
+# initialize data loaders
+train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
+valid_loader = DataLoader(valid_ds, batch_size=1)
+
+# TODO don't hard-code this?
+# tokenwise metrics to evaluate (ratio of correct examples (`example accuracy`) is always evaluated)
+metrics = {"f1_score": partial(f1_score, average="weighted", zero_division=0),
+           "accuracy": accuracy_score,
+           "precision": partial(precision_score, average="weighted", zero_division=0),
+           "recall": partial(recall_score, average="weighted", zero_division=0)}
 
 if model_params:
     print(f"Initializing {model_name} with the following parameters:")
@@ -203,14 +216,6 @@ elif model_name == "RandomTagger":
 else:
     raise NotImplementedError
 
-train_loader = DataLoader(train_ds, batch_size=1, shuffle=True)
-valid_loader = DataLoader(valid_ds, batch_size=1)
-
-# TODO don't hard-code this?
-metrics = {"f1_score": partial(f1_score, average="weighted", zero_division=0),
-           "accuracy": accuracy_score,
-           "precision": partial(precision_score, average="weighted", zero_division=0),
-           "recall": partial(recall_score, average="weighted", zero_division=0)}
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
