@@ -4,17 +4,17 @@ from collections import defaultdict
 from typing import Union, List, Optional
 
 from torch.utils.data import DataLoader
+from torch.nn import Module
 import numpy as np
 
 from src.utils.datasets import BmesSegmentationDataset
 from src.utils.metrics import evaluate_batch
-from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.nn.training_process import evaluate
-from src.utils.tokenizers import sequence2bmes, SymTokenizer
+from src.utils.tokenizers import SymTokenizer
 
 
 def testing_cycle(experiment_id: str,
-                  segmenter: Union[RandomSegmenter, NeuralSegmenter],
+                  model: Module,
                   indices: List[int],
                   original: List[str],
                   segmented: List[str],
@@ -29,7 +29,7 @@ def testing_cycle(experiment_id: str,
                   write_log: bool = True,
                   log_save_dir: Optional[str] = None) -> float:
 
-    model_name = segmenter.tagger.__class__.__name__
+    model_name = model.__class__.__name__
 
     if write_log and not log_save_dir:
         log_save_dir = f"./logs/{model_name}/{experiment_id}"
@@ -51,12 +51,12 @@ def testing_cycle(experiment_id: str,
 
     data_loader = DataLoader(data, batch_size=1)
 
-    if segmenter.__class__.__name__ == "RandomSegmenter":
+    if model_name == "RandomTagger":
 
-        overall_scores = evaluate_random_baseline(data_loader, device, metrics, segmenter)
+        overall_scores = evaluate_random_baseline(data_loader, device, metrics, model)
 
     else:
-        _, overall_scores, _ = evaluate(model=segmenter.tagger,
+        _, overall_scores, _ = evaluate(model=model,
                                         loader=data_loader,
                                         device=device,
                                         metrics=metrics)
@@ -111,7 +111,7 @@ def write_predictions_to_file():
 def evaluate_random_baseline(data_loader: DataLoader,
                              device: object,
                              metrics: dict,
-                             segmenter: RandomSegmenter) -> Optional[dict]:
+                             model: Module) -> Optional[dict]:
 
     batch_scores = defaultdict(lambda: [])
     for index_seq, encoder_seq, target_seq, true_lens in data_loader:
@@ -120,7 +120,7 @@ def evaluate_random_baseline(data_loader: DataLoader,
         target_seq = target_seq.to(device).squeeze(0)
         true_lens = true_lens.to(device).squeeze(0)
 
-        preds = segmenter.tagger.predict(encoder_seq)
+        preds = model.predict(encoder_seq)
 
         batch_scores = evaluate_batch(y_true=target_seq,
                                       y_pred=preds,

@@ -269,20 +269,10 @@ if flow_control["train_model"]:
 else:
     best_valid_accuracy = None
 
-if model_name == "RandomTagger":
-    segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
-                                bmes_tokenizer=bmes_tokenizer,
-                                model=model)
-else:
-    segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
-                                bmes_tokenizer=bmes_tokenizer,
-                                model=model,
-                                device=device)
-
 if flow_control["test_model"]:
     print(f"\nTesting {model_name}...")
     test_accuracy = testing_cycle(experiment_id=experiment_id,
-                                  segmenter=segmenter,
+                                  model=model,
                                   indices=test_indices,
                                   original=test_original,
                                   segmented=test_segmented,
