@@ -9,7 +9,7 @@ import torch
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
 from yaml import safe_load
 
-from constants import UNK_INDEX, PAD_INDEX, MAX_LEN, TOKENIZERS_DIR
+from constants import UNK_INDEX, PAD_INDEX, MAX_LEN, TOKENIZERS_DIR, DATA_PATHS
 from src.utils.etc import read_converted_data
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
@@ -59,28 +59,16 @@ else:
 if model_name == "RandomTagger":
     flow_control["train_model"] = False
 
-if train_type.lower() == "lemmas":
-    from constants import CONVERTED_LEMMAS_PATHS
-
-    results_path = f"data/results/lemmas/{model_name}/{experiment_id}"
-    if not os.path.exists(results_path):
-        os.makedirs(results_path)
-    train_indices, train_original, train_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["train"])
-    valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["valid"])
-    test_indices, test_original, test_segmented = read_converted_data(CONVERTED_LEMMAS_PATHS["test"])
-
-elif train_type.lower() == "forms":
-    from constants import CONVERTED_FORMS_PATHS
-
-    results_path = f"data/results/forms/{model_name}/{experiment_id}"
-    if not os.path.exists(results_path):
-        os.makedirs(results_path)
-    train_indices, train_original, train_segmented = read_converted_data(CONVERTED_FORMS_PATHS["train"])
-    valid_indices, valid_original, valid_segmented = read_converted_data(CONVERTED_FORMS_PATHS["valid"])
-    test_indices, test_original, test_segmented = read_converted_data(CONVERTED_FORMS_PATHS["test"])
-
-else:
+if train_type.lower() not in ("forms", "lemmas"):
     raise NotImplementedError
+
+results_path = f"data/results/{train_type.lower()}/{model_name}/{experiment_id}"
+if not os.path.exists(results_path):
+    os.makedirs(results_path)
+
+train_indices, train_original, train_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["train"])
+valid_indices, valid_original, valid_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["valid"])
+test_indices, test_original, test_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["test"])
 
 # preparing tokenizers
 original_tokenizer_path = f"{TOKENIZERS_DIR}/original.json"
@@ -305,3 +293,6 @@ if flow_control["test_model"]:
                   batch_size=batch_size,
                   write_log=write_log,
                   log_save_dir=log_save_dir)
+
+print(f"Experiment on {model_name} successfully carried out")
+print(f"Experiment ID: {experiment_id}")

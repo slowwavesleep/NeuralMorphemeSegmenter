@@ -137,8 +137,8 @@ class NeuralSegmenter(AbstractSegmenter):
         return predictions, true_lengths
 
     def segment_batch(self, example_batch: List[str]):
-        tags_batch: List[str]
-        true_lengths: List[str]
+        tags_batch: List[List[int]]
+        true_lengths: List[int]
         tags_batch, true_lengths = self.tag_batch(example_batch)
 
         segmented_batch = []
