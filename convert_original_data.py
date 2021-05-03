@@ -1,9 +1,10 @@
+import math
 from pathlib import Path
 
 from sklearn.model_selection import train_test_split
 
 from src.utils.conversion import write_examples, remove_labels
-from constants import SEP_TOKEN, ORIGINAL_LEMMAS_PATHS
+from constants import SEP_TOKEN, ORIGINAL_LEMMAS_PATHS, DATA_PATHS, SHUFFLE_SEED, LOW_RESOURCE_SIZE
 
 
 def main():
@@ -32,9 +33,14 @@ def main():
                                                            shuffle=True,
                                                            stratify=has_splits_test)
 
-    write_examples(data=examples_train, path="data/converted_lemmas/lemmas_train.jsonl")
-    write_examples(data=examples_valid, path="data/converted_lemmas/lemmas_valid.jsonl")
-    write_examples(data=examples_test, path="data/converted_lemmas/lemmas_test.jsonl")
+    n_low_resource_examples = math.floor(len(examples_train) * LOW_RESOURCE_SIZE)
+
+    write_examples(data=examples_train, path=DATA_PATHS["lemmas"]["train"], seed=SHUFFLE_SEED)
+    write_examples(data=examples_train[:n_low_resource_examples],
+                   path=DATA_PATHS["lemmas_low_resource"]["train"],
+                   seed=SHUFFLE_SEED)
+    write_examples(data=examples_valid, path=DATA_PATHS["lemmas"]["valid"], seed=SHUFFLE_SEED)
+    write_examples(data=examples_test, path=DATA_PATHS["lemmas"]["test"], seed=SHUFFLE_SEED)
 
 
 if __name__ == "__main__":
