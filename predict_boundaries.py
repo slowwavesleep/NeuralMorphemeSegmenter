@@ -1,4 +1,5 @@
 import json
+import os
 
 import torch
 from torch.utils.data import DataLoader
@@ -7,16 +8,22 @@ from tqdm import tqdm
 from constants import PAD_INDEX, UNK_INDEX, TOKENIZERS_DIR, DATA_PATHS, MAX_LEN
 from src.utils.datasets import BmesSegmentationDataset
 from src.utils.etc import read_experiment_data
-from src.utils.tokenizers import SymTokenizer
+from src.utils.tokenizers import SymTokenizer, bmes2sequence
 from src.nn.models import LstmCrfTagger, LstmTagger
 from src.utils.segmenters import NeuralSegmenter
 
+# TODO parametrize all of this
 model_name = "LstmTagger"
 experiment_id = "cfb7f313753d42ee84c26c8708f51ebd"
 model_path = f"models/{model_name}/{experiment_id}/best_model_state_dict.pth"
 model_config_log = f"logs/{model_name}/{experiment_id}/config.json"
 batch_size = 1024
 train_type = "lemmas"
+write_dir = f"data/predictions/{train_type}/{model_name}/{experiment_id}"
+write_path = f"{write_dir}/predictions.jsonl"
+
+if not os.path.exists(write_dir):
+    os.makedirs(write_dir)
 
 with open(model_config_log) as file:
     config = json.loads(file.read())
@@ -62,20 +69,55 @@ test_ds = BmesSegmentationDataset(indices=test_indices,
                                   batch_size=batch_size)
 
 test_loader = DataLoader(test_ds, batch_size=1)
+verbose = True
+model.eval()
+progress_bar = tqdm(total=len(test_loader), disable=not verbose, desc="Evaluate")
 
-# print(segmenter.segment_batch(test_original[:1024]))
-# results = []
-# for i in tqdm(range(0, len(test_original))):
-#     batch_slice = slice(i, i + batch_size)
-#     batch_indices = test_indices[batch_slice]
-#     batch_original = test_original[batch_slice]
-#     batch_segmented = test_segmented[batch_slice]
-#     predictions = segmenter.segment_batch(batch_original)
-#     batch_results = []
-#     for index, original, segmented, prediction in zip(batch_indices, batch_original, batch_segmented, predictions):
-#         batch_results.append({"index": index,
-#                               "original": original,
-#                               "segmented": segmented,
-#                               "prediction": prediction,
-#                               "match": segmented == prediction})
-#     results.extend(batch_results)
+indices = []
+original_words = []
+segmented_words = []
+predictions = []
+true_lengths = []
+
+for index_seq, encoder_seq, target_seq, true_lens in test_loader:
+    index_seq = index_seq.squeeze(0)
+    encoder_seq = encoder_seq.to(device).squeeze(0)
+    target_seq = target_seq.to(device).squeeze(0)
+    true_lens = true_lens.to(device).squeeze(0)
+    with torch.no_grad():
+        batch_predictions = model.predict(encoder_seq, true_lens)
+    indices.extend(index_seq.cpu().numpy())
+    original_words.extend(encoder_seq.cpu().numpy())
+    predictions.extend(batch_predictions)
+    segmented_words.extend(target_seq.cpu().numpy())
+    true_lengths.extend(true_lens.cpu().numpy())
+    progress_bar.update()
+
+progress_bar.close()
+
+with open(write_path, "w") as file:
+    for index, original_word, target_segmentation, prediction, true_length in zip(indices,
+                                                                                  original_words,
+                                                                                  segmented_words,
+                                                                                  predictions,
+                                                                                  true_lengths):
+        original_word = original_tokenizer.decode(original_word)[:true_length]
+        target_bmes = bmes_tokenizer.decode(target_segmentation)[:true_length]
+        predicted_bmes = bmes_tokenizer.decode(prediction)[:true_length]
+
+        target_segmentation_word = bmes2sequence(original_sequence=original_word,
+                                                 bmes_tags=target_bmes)
+
+        predicted_segmentation_word = bmes2sequence(original_sequence=original_word,
+                                                    bmes_tags=predicted_bmes)
+
+        data = {"index": int(index),
+                "original": original_word,
+                "segmented": target_segmentation_word,
+                "bmes": target_bmes,
+                "predicted_segmented": predicted_segmentation_word,
+                "predicted_bmes": predicted_bmes,
+                "match": target_segmentation_word == predicted_segmentation_word}
+
+        file.write(json.dumps(data, ensure_ascii=False) + "\n")
+

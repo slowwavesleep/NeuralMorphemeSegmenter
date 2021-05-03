@@ -62,7 +62,7 @@ def evaluate(model: Module,
     epoch_scores = dict()
     batch_scores = defaultdict(lambda: [])
 
-    progress_bar = tqdm(total=len(loader), disable=not verbose, desc='Evaluate')
+    progress_bar = tqdm(total=len(loader), disable=not verbose, desc="Evaluate")
 
     model.eval()
 
