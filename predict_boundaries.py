@@ -1,7 +1,8 @@
 # load the best model
 # predict tags in batches
 # write to file
-from yaml import safe_load
+import json
+
 import torch
 
 from constants import PAD_INDEX, UNK_INDEX, TOKENIZERS_DIR
@@ -9,13 +10,13 @@ from src.utils.tokenizers import SymTokenizer
 from src.nn.models import LstmCrfTagger
 from src.utils.segmenters import NeuralSegmenter
 
+model_name = "LstmCrfTagger"
 experiment_id = "d24ee762d18640d0adc2cf7042b668c1"
-model_path = f"models/LstmCrfTagger/{experiment_id}/best_model_state_dict.pth"
-# replace with json config from log
-model_config_path = "configs/lstmcrf_lemmas.yml"
+model_path = f"models/{model_name}/{experiment_id}/best_model_state_dict.pth"
+model_config_log = f"logs/{model_name}/{experiment_id}/config.json"
 
-with open(model_config_path) as file:
-    config = safe_load(file)
+with open(model_config_log) as file:
+    config = json.loads(file.read())
 
 model_params = config["model_params"]
 
@@ -47,5 +48,6 @@ segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
                             device=device,
                             seed=None)
 
-
-print((segmenter.segment_example("примерять")))
+examples = ["простой", "пример"]
+# Add max batch size
+print(segmenter.segment_batch(examples))

@@ -121,9 +121,8 @@ class NeuralSegmenter(AbstractSegmenter):
 
     def tag_batch(self, example_batch: List[str]):
         true_lengths = [len(example) for example in example_batch]
-        true_lengths = torch.tensor(true_lengths).long().to(self.device).unsqueeze(0)
-
         max_length = max(true_lengths)
+        true_lengths = torch.tensor(true_lengths).long().to(self.device)
 
         processed_examples = []
 
