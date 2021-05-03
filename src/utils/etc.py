@@ -26,7 +26,7 @@ def flatten_list(list_to_flatten: List[list]) -> list:
     return list(itertools.chain(*list_to_flatten))
 
 
-def read_converted_data(path: str) -> Tuple[List[int], List[str], List[str]]:
+def read_experiment_data(path: str) -> Tuple[List[int], List[str], List[str]]:
     indices = []
     original = []
     segmented = []

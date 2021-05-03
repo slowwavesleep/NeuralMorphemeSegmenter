@@ -11,7 +11,7 @@ from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_sc
 from yaml import safe_load
 
 from constants import UNK_INDEX, PAD_INDEX, MAX_LEN, TOKENIZERS_DIR, DATA_PATHS
-from src.utils.etc import read_converted_data
+from src.utils.etc import read_experiment_data
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
 from src.nn.testing_process import testing_cycle
@@ -69,9 +69,9 @@ results_path = f"data/results/{train_type.lower()}/{model_name}/{experiment_id}"
 if not os.path.exists(results_path):
     os.makedirs(results_path)
 
-train_indices, train_original, train_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["train"])
-valid_indices, valid_original, valid_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["valid"])
-test_indices, test_original, test_segmented = read_converted_data(DATA_PATHS[train_type.lower()]["test"])
+train_indices, train_original, train_segmented = read_experiment_data(DATA_PATHS[train_type.lower()]["train"])
+valid_indices, valid_original, valid_segmented = read_experiment_data(DATA_PATHS[train_type.lower()]["valid"])
+test_indices, test_original, test_segmented = read_experiment_data(DATA_PATHS[train_type.lower()]["test"])
 
 # prepare the tokenizers
 original_tokenizer_path = f"{TOKENIZERS_DIR}/original.json"
@@ -307,6 +307,7 @@ if write_log:
     with open("./logs/successful_experiments.jsonl", "a") as file:
         info = {"experiment_id": experiment_id,
                 "model_name": model_name,
+                "train_type": train_type.lower(),
                 "finished": datetime.now().isoformat(),
                 "best_valid_accuracy": best_valid_accuracy,
                 "test_accuracy": test_accuracy}
