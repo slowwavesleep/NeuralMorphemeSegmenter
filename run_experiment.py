@@ -18,7 +18,7 @@ from src.nn.testing_process import testing_cycle
 from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
-parser = argparse.ArgumentParser(description='Run model with specified settings')
+parser = argparse.ArgumentParser(description="Run model with specified settings")
 parser.add_argument("-p", "--path", help="Path to a YAML configuration file", type=str)
 args = parser.parse_args()
 
