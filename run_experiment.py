@@ -281,7 +281,6 @@ else:
 
 if flow_control["test_model"]:
     print(f"\nTesting {model_name}...")
-    print(f"Writing to file: {flow_control['write_results']}")
     test_accuracy = testing_cycle(experiment_id=experiment_id,
                                   segmenter=segmenter,
                                   indices=test_indices,
@@ -289,8 +288,6 @@ if flow_control["test_model"]:
                                   segmented=test_segmented,
                                   original_tokenizer=original_tokenizer,
                                   bmes_tokenizer=bmes_tokenizer,
-                                  write_predictions=flow_control["write_results"],
-                                  write_path=results_path,
                                   metrics=metrics,
                                   device=device,
                                   pad_index=PAD_INDEX,
@@ -305,7 +302,7 @@ else:
 print(f"Experiment on {model_name} successfully carried out")
 print(f"Experiment ID: {experiment_id}")
 
-# store timestamps and ids of successful experiments
+# store timestamps and ids of successful experiments along with scores
 if write_log:
     with open("./logs/successful_experiments.jsonl", "a") as file:
         info = {"experiment_id": experiment_id,

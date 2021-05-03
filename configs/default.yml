@@ -1,8 +1,6 @@
-
 flow_control:
   train_model: True
   test_model: True
-  write_results: False
   write_log: True
 
 train_params:

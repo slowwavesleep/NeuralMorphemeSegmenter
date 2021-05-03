@@ -1,7 +1,6 @@
 import os
 import json
 from collections import defaultdict
-from pathlib import Path
 from typing import Union, List, Optional
 
 from torch.utils.data import DataLoader
@@ -26,8 +25,6 @@ def testing_cycle(experiment_id: str,
                   pad_index: int,
                   unk_index: int,
                   batch_size: int,
-                  write_predictions: bool = False,
-                  write_path: Optional[str] = None,
                   max_len: Optional[int] = None,
                   write_log: bool = True,
                   log_save_dir: Optional[str] = None) -> float:
@@ -81,10 +78,6 @@ def testing_cycle(experiment_id: str,
         with open(f"{log_save_dir}/test_log.json", "w") as file:
             info = overall_scores
             file.write(json.dumps(info, indent=4))
-
-    file_path = Path(write_path)
-    file_path.mkdir(parents=True, exist_ok=True)
-    file_path = file_path / "test.jsonl"
 
     test_accuracy = overall_scores["example_accuracy"]
 
