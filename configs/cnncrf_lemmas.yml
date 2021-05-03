@@ -11,7 +11,7 @@ train_params:
   train_type: "lemmas"
   model_name: "CnnCrfTagger"
   batch_size: 128
-  n_epochs: 5
+  n_epochs: 10
   grad_clip: 3.
   lr: 1e-03
 
@@ -20,4 +20,4 @@ model_params:
   hidden_size: 1024
   convolution_layers: 8
   kernel_size: 3
-  spatial_dropout: 0.3
+  spatial_dropout: 0.1
