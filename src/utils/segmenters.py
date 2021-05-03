@@ -93,11 +93,9 @@ class NeuralSegmenter(AbstractSegmenter):
                  bmes_tokenizer: SymTokenizer,
                  model: nn.Module,
                  device: object,
-                 seed: Optional[int] = None,
                  *,
                  sep: str = "|"):
 
-        self.seed = seed
         self.device = device
         self.original_tokenizer = original_tokenizer
         self.bmes_tokenizer = bmes_tokenizer

@@ -277,8 +277,7 @@ else:
     segmenter = NeuralSegmenter(original_tokenizer=original_tokenizer,
                                 bmes_tokenizer=bmes_tokenizer,
                                 model=model,
-                                device=device,
-                                seed=seed)
+                                device=device)
 
 if flow_control["test_model"]:
     print(f"\nTesting {model_name}...")
