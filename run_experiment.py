@@ -61,7 +61,7 @@ if model_name == "RandomTagger":
     # random tagger can't be trained
     flow_control["train_model"] = False
 
-if train_type.lower() not in ("forms", "lemmas"):
+if train_type.lower() not in DATA_PATHS.keys():
     raise NotImplementedError
 
 # load the relevant data
