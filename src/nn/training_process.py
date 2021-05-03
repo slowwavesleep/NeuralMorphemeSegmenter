@@ -112,7 +112,7 @@ def training_cycle(experiment_id: str,
                    save_best: bool = True,
                    save_last: bool = True,
                    write_log: bool = True,
-                   log_save_dir: Optional[str] = None):
+                   log_save_dir: Optional[str] = None) -> float:
 
     model_name = model.__class__.__name__
 
@@ -215,3 +215,5 @@ def training_cycle(experiment_id: str,
                     "n_epoch": n_epoch,
                     "stopped_early": False}
             file.write(json.dumps(info, indent=4))
+
+    return best_accuracy

@@ -30,7 +30,7 @@ def testing_cycle(experiment_id: str,
                   write_path: Optional[str] = None,
                   max_len: Optional[int] = None,
                   write_log: bool = True,
-                  log_save_dir: Optional[str] = None):
+                  log_save_dir: Optional[str] = None) -> float:
 
     model_name = segmenter.tagger.__class__.__name__
 
@@ -85,6 +85,10 @@ def testing_cycle(experiment_id: str,
     file_path = Path(write_path)
     file_path.mkdir(parents=True, exist_ok=True)
     file_path = file_path / "test.jsonl"
+
+    test_accuracy = overall_scores["example_accuracy"]
+
+    return test_accuracy
 
 
 def write_predictions_to_file():

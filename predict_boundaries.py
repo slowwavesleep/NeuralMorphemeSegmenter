@@ -11,7 +11,7 @@ from src.nn.models import LstmCrfTagger
 from src.utils.segmenters import NeuralSegmenter
 
 model_name = "LstmCrfTagger"
-experiment_id = "d24ee762d18640d0adc2cf7042b668c1"
+experiment_id = "f045798b3c104aab9c6ae46213589526"
 model_path = f"models/{model_name}/{experiment_id}/best_model_state_dict.pth"
 model_config_log = f"logs/{model_name}/{experiment_id}/config.json"
 

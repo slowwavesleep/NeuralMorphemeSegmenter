@@ -3,6 +3,7 @@ from functools import partial
 import argparse
 import os
 import uuid
+from datetime import datetime
 
 from torch.utils.data import DataLoader
 import torch
@@ -216,7 +217,6 @@ elif model_name == "RandomTagger":
 else:
     raise NotImplementedError
 
-
 if torch.cuda.is_available():
     device = torch.device("cuda")
 else:
@@ -244,21 +244,21 @@ if flow_control["train_model"]:
     optimizer = torch.optim.Adam(params=model.parameters(), lr=lr)
     model.to(device)
 
-    training_cycle(experiment_id=experiment_id,
-                   model=model,
-                   train_loader=train_loader,
-                   validation_loader=valid_loader,
-                   optimizer=optimizer,
-                   device=device,
-                   clip=grad_clip,
-                   metrics=metrics,
-                   epochs=n_epochs,
-                   early_stopping=early_stopping,
-                   n_without_improvements=n_without_improvements,
-                   save_best=save_best,
-                   save_last=save_last,
-                   write_log=write_log,
-                   log_save_dir=log_save_dir)
+    best_valid_accuracy = training_cycle(experiment_id=experiment_id,
+                                         model=model,
+                                         train_loader=train_loader,
+                                         validation_loader=valid_loader,
+                                         optimizer=optimizer,
+                                         device=device,
+                                         clip=grad_clip,
+                                         metrics=metrics,
+                                         epochs=n_epochs,
+                                         early_stopping=early_stopping,
+                                         n_without_improvements=n_without_improvements,
+                                         save_best=save_best,
+                                         save_last=save_last,
+                                         write_log=write_log,
+                                         log_save_dir=log_save_dir)
 
     if write_log:
         with open(f"{log_save_dir}/config.json", "w") as file:
@@ -266,6 +266,8 @@ if flow_control["train_model"]:
                     "train_params": train_params,
                     "model_params": model_params}
             file.write(json.dumps(info, indent=4))
+else:
+    best_valid_accuracy = None
 
 if model_name == "RandomTagger":
     segmenter = RandomSegmenter(original_tokenizer=bmes_tokenizer,
@@ -281,23 +283,35 @@ else:
 if flow_control["test_model"]:
     print(f"\nTesting {model_name}...")
     print(f"Writing to file: {flow_control['write_results']}")
-    testing_cycle(experiment_id=experiment_id,
-                  segmenter=segmenter,
-                  indices=test_indices,
-                  original=test_original,
-                  segmented=test_segmented,
-                  original_tokenizer=original_tokenizer,
-                  bmes_tokenizer=bmes_tokenizer,
-                  write_predictions=flow_control["write_results"],
-                  write_path=results_path,
-                  metrics=metrics,
-                  device=device,
-                  pad_index=PAD_INDEX,
-                  unk_index=UNK_INDEX,
-                  max_len=MAX_LEN,
-                  batch_size=batch_size,
-                  write_log=write_log,
-                  log_save_dir=log_save_dir)
+    test_accuracy = testing_cycle(experiment_id=experiment_id,
+                                  segmenter=segmenter,
+                                  indices=test_indices,
+                                  original=test_original,
+                                  segmented=test_segmented,
+                                  original_tokenizer=original_tokenizer,
+                                  bmes_tokenizer=bmes_tokenizer,
+                                  write_predictions=flow_control["write_results"],
+                                  write_path=results_path,
+                                  metrics=metrics,
+                                  device=device,
+                                  pad_index=PAD_INDEX,
+                                  unk_index=UNK_INDEX,
+                                  max_len=MAX_LEN,
+                                  batch_size=batch_size,
+                                  write_log=write_log,
+                                  log_save_dir=log_save_dir)
+else:
+    test_accuracy = None
 
 print(f"Experiment on {model_name} successfully carried out")
 print(f"Experiment ID: {experiment_id}")
+
+# store timestamps and ids of successful experiments
+if write_log:
+    with open("./logs/successful_experiments.jsonl", "a") as file:
+        info = {"experiment_id": experiment_id,
+                "model_name": model_name,
+                "finished": datetime.now().isoformat(),
+                "best_valid_accuracy": best_valid_accuracy,
+                "test_accuracy": test_accuracy}
+        file.write(json.dumps(info) + "\n")
