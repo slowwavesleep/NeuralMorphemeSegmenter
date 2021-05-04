@@ -1,0 +1,6 @@
+./configs/lstmcrf_forms.yml
+./configs/lstmcrf_forms_low_resource.yml
+./configs/lstmcrf_forms_shuffled.yml
+./configs/lstmcrf_forms_shuffled_low_resource.yml
+./configs/lstmcrf_lemmas.yml
+./configs/lstmcrf_lemmas_low_resource.yml
