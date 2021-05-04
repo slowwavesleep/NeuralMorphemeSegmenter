@@ -1,0 +1,6 @@
+./configs/lstm_forms.yml
+./configs/lstm_forms_low_resource.yml
+./configs/lstm_forms_shuffled.yml
+./configs/lstm_forms_shuffled_low_resource.yml
+./configs/lstm_lemmas.yml
+./configs/lstm_lemmas_low_resource.yml
