@@ -431,6 +431,9 @@ class CnnCrfTagger(nn.Module):
         self.crf = CRF(self.tag_vocab_size, batch_first=True)
 
     def compute_outputs(self, sequences, true_lengths):
+
+        pad_mask = (sequences == self.padding_index).float()
+
         sequences = self.encoder(sequences)
         sequences = self.spatial_dropout(sequences)
         sequences = self.layer_norm(sequences)
@@ -439,9 +442,7 @@ class CnnCrfTagger(nn.Module):
         encoder_out = self.fc_2(encoder_out)
         encoder_out = torch.relu(encoder_out)
 
-        # pad_mask = (sequences == self.padding_index).float()
-        #
-        # encoder_out[:, :, self.padding_index] += pad_mask * 10000
+        encoder_out[:, :, self.padding_index] += pad_mask * 10000
 
         return encoder_out
 
@@ -583,7 +584,6 @@ class TransformerCrfTagger(nn.Module):
         mask = sequences.ne(self.padding_index)
         sequences = self.transformer_encoder(sequences, mask)
         sequences = self.fc(sequences)
-
         return sequences
 
     def forward(self, sequences, labels, true_lengths):
