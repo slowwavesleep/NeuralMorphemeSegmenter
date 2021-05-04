@@ -15,7 +15,6 @@ from src.utils.etc import read_experiment_data
 from src.utils.datasets import BmesSegmentationDataset
 from src.nn.training_process import training_cycle
 from src.nn.testing_process import testing_cycle
-from src.utils.segmenters import RandomSegmenter, NeuralSegmenter
 from src.utils.tokenizers import SymTokenizer
 
 parser = argparse.ArgumentParser(description="Run model with specified settings")

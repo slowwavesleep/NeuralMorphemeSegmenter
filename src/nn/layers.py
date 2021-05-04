@@ -1,11 +1,10 @@
 import math
-from typing import Iterable, List, Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.nn import Module
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import transformer_encoder
 from transformer_encoder.utils import PositionalEncoding

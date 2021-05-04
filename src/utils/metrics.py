@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Callable, Iterable
+from typing import Callable
 
 from src.utils.etc import flatten_list, remove_pads
 

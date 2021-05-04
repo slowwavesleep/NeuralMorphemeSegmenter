@@ -1,7 +1,7 @@
 import os
 import json
 from collections import defaultdict
-from typing import Union, List, Optional
+from typing import List, Optional
 
 from torch.utils.data import DataLoader
 from torch.nn import Module

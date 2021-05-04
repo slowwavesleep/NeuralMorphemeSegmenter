@@ -3,7 +3,6 @@ import math
 
 from torch.utils.data import Dataset
 import torch
-from torch import Tensor
 
 from src.utils.tokenizers import SymTokenizer
 
