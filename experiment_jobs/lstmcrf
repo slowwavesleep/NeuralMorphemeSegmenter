@@ -4,4 +4,3 @@
 ./configs/lstmcrf_forms_shuffled_low_resource.yml
 ./configs/lstmcrf_forms.yml
 ./configs/lstmcrf_forms_low_resource.yml
-

@@ -1,0 +1,3 @@
+./configs/baseline_lemmas.yml
+./configs/baseline_forms.yml
+./configs/baseline_forms_shuffled.yml
