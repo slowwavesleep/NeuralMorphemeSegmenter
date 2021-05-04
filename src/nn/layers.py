@@ -267,7 +267,6 @@ class CnnEncoder(nn.Module):
         self.final_resize = nn.Linear(in_features=self.convolution_layers * len(self.kernel_sizes) * self.num_filters,
                                       out_features=self.hidden_size)
 
-        # self.spatial_dropout = SpatialDropout(p=spatial_dropout)
         self.layer_norm = nn.LayerNorm(self.num_filters)
 
     def apply_layer_norm(self, sequence):
@@ -287,10 +286,10 @@ class CnnEncoder(nn.Module):
                                                      kernel_size=kernel_size,
                                                      padding=(kernel_size - 1) // 2)
                                            for _ in range(num_layers)])
+
         return convolution_stack
 
     def forward(self, sequence):
-        # sequence = self.embedding(sequence)
         if self.use_one_hot:
             sequence = F.one_hot(sequence, num_classes=self.vocab_size).float()
         else:

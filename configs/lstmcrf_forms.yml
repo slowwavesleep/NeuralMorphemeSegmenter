@@ -1,6 +1,7 @@
 flow_control:
   train_model: True
   test_model: True
+  write_log: True
 
 train_params:
   n_without_improvements: 10

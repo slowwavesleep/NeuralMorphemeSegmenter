@@ -8,7 +8,7 @@ train_params:
   early_stopping: True
   save_best: False
   save_last: False
-  train_type: "lemmas"
+  train_type: "forms"
   model_name: "RandomTagger"
   batch_size: 128
   n_epochs: 1

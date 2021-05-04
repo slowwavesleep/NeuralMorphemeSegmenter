@@ -1,6 +1,7 @@
 flow_control:
   train_model: True
   test_model: True
+  write_log: True
 
 train_params:
   n_without_improvements: 10
@@ -12,14 +13,14 @@ train_params:
   batch_size: 128
   n_epochs: 100
   grad_clip: 3.
-  lr: 1e-03
+  lr: 1e-04
 
 model_params:
-  cnn_out_dim: 256
-  num_filters: 512
+  cnn_out_dim: 512
+  num_filters: 192
   emb_dim: 256
   hidden_size: 2048
-  convolution_layers: 3
-  kernel_sizes: [3, 5, 7]
-  spatial_dropout: 0.1
+  convolution_layers: 4
+  kernel_sizes: [3, 3, 5, 5, 7, 7]
+  spatial_dropout: 0.3
   use_one_hot: False
