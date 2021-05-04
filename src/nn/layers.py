@@ -1,10 +1,11 @@
 import math
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Union
 
 import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.nn import Module
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import transformer_encoder
 from transformer_encoder.utils import PositionalEncoding
@@ -212,51 +213,116 @@ class CnnEncoder(nn.Module):
 
     def __init__(self,
                  vocab_size: int,
-                 emb_dim: int,
-                 spatial_dropout: float,
+                 out_dim: int,
                  convolution_layers: int,
-                 kernel_size: int,
+                 kernel_sizes: Union[List[int], int],
                  padding_index: int,
+                 emb_dim: Optional[int],
+                 use_one_hot: bool = True,
+                 num_filters: int = 128,
                  scale: Optional[float] = None):
+
         super(CnnEncoder, self).__init__()
+
+        if isinstance(kernel_sizes, int):
+            kernel_sizes = [kernel_sizes]
+
+        for kernel_size in kernel_sizes:
+            assert kernel_size % 2
+
         self.vocab_size = vocab_size
         self.emb_dim = emb_dim
+        self.num_filters = num_filters
         self.convolution_layers = convolution_layers
-        self.kernel_size = kernel_size
+        self.kernel_sizes = kernel_sizes
+        self.hidden_size = out_dim
+        self.padding_index = padding_index
+        self.use_one_hot = use_one_hot
 
-        self.embedding = nn.Embedding(num_embeddings=vocab_size,
-                                      embedding_dim=emb_dim,
-                                      padding_idx=padding_index)
         if scale is not None:
             self.scale = scale
         else:
             self.scale = np.sqrt(0.5)
 
-        self.convolutions = nn.ModuleList([nn.Conv1d(in_channels=self.emb_dim,
-                                                     out_channels=2 * self.emb_dim,
+        if self.use_one_hot or not self.emb_dim:
+            self.representation_dim = self.vocab_size
+        else:
+            self.embedding = nn.Embedding(num_embeddings=self.vocab_size,
+                                          embedding_dim=self.emb_dim,
+                                          padding_idx=self.padding_index)
+            self.representation_dim = self.emb_dim
+
+        self.convolutions_stacks = nn.ModuleList([self.build_convolution_stack(in_channels=self.representation_dim,
+                                                                               out_channels=self.num_filters,
+                                                                               kernel_size=kernel_size,
+                                                                               num_layers=self.convolution_layers)
+                                                  for kernel_size in self.kernel_sizes])
+
+        self.residual_resize = nn.Linear(in_features=self.representation_dim,
+                                         out_features=self.num_filters)
+
+        self.final_residual_resize = nn.Linear(in_features=self.representation_dim,
+                                               out_features=self.hidden_size)
+
+        self.final_resize = nn.Linear(in_features=self.convolution_layers * len(self.kernel_sizes) * self.num_filters,
+                                      out_features=self.hidden_size)
+
+        # self.spatial_dropout = SpatialDropout(p=spatial_dropout)
+        self.layer_norm = nn.LayerNorm(self.num_filters)
+
+    def apply_layer_norm(self, sequence):
+        sequence = sequence.permute(0, 2, 1)
+        sequence = self.layer_norm(sequence)
+        sequence = sequence.permute(0, 2, 1)
+        return sequence
+
+    @staticmethod
+    def build_convolution_stack(in_channels: int,
+                                out_channels: int,
+                                kernel_size: int,
+                                num_layers: int):
+
+        convolution_stack = nn.ModuleList([nn.Conv1d(in_channels=in_channels,
+                                                     out_channels=out_channels,
                                                      kernel_size=kernel_size,
                                                      padding=(kernel_size - 1) // 2)
-                                           for _ in range(self.convolution_layers)])
-
-        self.spatial_dropout = SpatialDropout(p=spatial_dropout)
-        self.layer_norm = nn.LayerNorm(emb_dim)
+                                           for _ in range(num_layers)])
+        return convolution_stack
 
     def forward(self, sequence):
-        sequence = self.embedding(sequence)
-        sequence = self.spatial_dropout(sequence)
-        sequence = self.layer_norm(sequence)
-        sequence_input = sequence.permute(0, 2, 1)
+        # sequence = self.embedding(sequence)
+        if self.use_one_hot:
+            sequence = F.one_hot(sequence, num_classes=self.vocab_size).float()
+        else:
+            sequence = self.embedding(sequence)
+        # (batch_size, num_filters, seq_len)
+        residual_sequence = self.residual_resize(sequence).permute(0, 2, 1)
+        # (batch_size, seq_len, hidden_size)
+        final_residual_sequence = self.final_residual_resize(sequence)
+        # (batch_size, vocab_size, seq_len)
+        sequence = sequence.permute(0, 2, 1)
 
-        for i, conv in enumerate(self.convolutions):
-            convolved = conv(self.spatial_dropout(sequence_input))
-            convolved = F.glu(convolved, dim=1)
-            convolved = (convolved + sequence_input) * self.scale
-            sequence_input = convolved
+        convolutions_out = []
+        convolution_stack: nn.ModuleList
+        for convolution_stack in self.convolutions_stacks:
+            sequence_stack = []
+            for convolution_layer in convolution_stack:
+                convolved_sequence = convolution_layer(sequence)
+                convolved_sequence = self.apply_layer_norm(convolved_sequence)
+                convolved_sequence = torch.relu(convolved_sequence)
+                # residual connection
+                convolved_sequence = (convolved_sequence + residual_sequence) * self.scale
+                sequence_stack.append(convolved_sequence)
+            sequence_stack = torch.cat(sequence_stack, dim=1)
+            convolutions_out.append(sequence_stack)
+        # (batch_size, len(kernel_sizes) * num_layers * num_filters, seq_len)
+        convolutions_out = torch.cat(convolutions_out, dim=1)
+        sequence = convolutions_out.permute(0, 2, 1)
 
-        convolved = convolved.permute(0, 2, 1)
-        combined = (convolved + sequence) * self.scale
+        sequence = self.final_resize(sequence)
+        sequence += final_residual_sequence
 
-        return convolved, combined
+        return sequence
 
 
 class TransformerEncoder(nn.Module):

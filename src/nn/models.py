@@ -323,10 +323,13 @@ class CnnTagger(nn.Module):
     def __init__(self,
                  char_vocab_size: int,
                  tag_vocab_size: int,
+                 num_filters: int,
                  emb_dim: int,
+                 cnn_out_dim: int,
                  hidden_size: int,
                  convolution_layers: int,
-                 kernel_size: int,
+                 kernel_sizes: int,
+                 use_one_hot: bool,
                  spatial_dropout: float = 0.,
                  padding_index: int = 0):
         super(CnnTagger, self).__init__()
@@ -335,17 +338,19 @@ class CnnTagger(nn.Module):
 
         self.encoder = CnnEncoder(vocab_size=char_vocab_size,
                                   emb_dim=emb_dim,
-                                  spatial_dropout=spatial_dropout,
+                                  num_filters=num_filters,
+                                  out_dim=cnn_out_dim,
                                   convolution_layers=convolution_layers,
-                                  kernel_size=kernel_size,
-                                  padding_index=padding_index)
+                                  kernel_sizes=kernel_sizes,
+                                  padding_index=padding_index,
+                                  use_one_hot=use_one_hot)
 
-        self.fc_1 = nn.Linear(in_features=emb_dim,
+        self.fc_1 = nn.Linear(in_features=cnn_out_dim,
                               out_features=hidden_size)
         self.fc_2 = nn.Linear(in_features=hidden_size,
                               out_features=tag_vocab_size)
 
-        self.layer_norm = nn.LayerNorm(emb_dim)
+        self.layer_norm = nn.LayerNorm(cnn_out_dim)
         self.spatial_dropout = SpatialDropout(p=spatial_dropout)
 
         self.loss = torch.nn.CrossEntropyLoss(
@@ -353,10 +358,10 @@ class CnnTagger(nn.Module):
             reduction='none')
 
     def compute_outputs(self, sequences, true_lengths):
-        encoder_seq_convolved, encoder_seq_combined = self.encoder(sequences)
-        encoder_seq_combined = self.spatial_dropout(encoder_seq_combined)
-        encoder_seq_combined = self.layer_norm(encoder_seq_combined)
-        encoder_out = self.fc_1(encoder_seq_combined)
+        sequences = self.encoder(sequences)
+        sequences = self.spatial_dropout(sequences)
+        sequences = self.layer_norm(sequences)
+        encoder_out = self.fc_1(sequences)
         encoder_out = torch.relu(encoder_out)
         encoder_out = self.fc_2(encoder_out)
         encoder_out = torch.relu(encoder_out)
@@ -393,10 +398,13 @@ class CnnCrfTagger(nn.Module):
     def __init__(self,
                  char_vocab_size: int,
                  tag_vocab_size: int,
+                 num_filters: int,
                  emb_dim: int,
+                 cnn_out_dim: int,
                  hidden_size: int,
                  convolution_layers: int,
-                 kernel_size: int,
+                 kernel_sizes: int,
+                 use_one_hot: bool,
                  spatial_dropout: float = 0.,
                  padding_index: int = 0):
         super(CnnCrfTagger, self).__init__()
@@ -405,37 +413,35 @@ class CnnCrfTagger(nn.Module):
 
         self.encoder = CnnEncoder(vocab_size=char_vocab_size,
                                   emb_dim=emb_dim,
-                                  spatial_dropout=spatial_dropout,
+                                  num_filters=num_filters,
+                                  out_dim=cnn_out_dim,
                                   convolution_layers=convolution_layers,
-                                  kernel_size=kernel_size,
-                                  padding_index=padding_index)
+                                  kernel_sizes=kernel_sizes,
+                                  padding_index=padding_index,
+                                  use_one_hot=use_one_hot)
 
-        self.fc_1 = nn.Linear(in_features=emb_dim,
+        self.fc_1 = nn.Linear(in_features=cnn_out_dim,
                               out_features=hidden_size)
         self.fc_2 = nn.Linear(in_features=hidden_size,
                               out_features=tag_vocab_size)
 
-        self.layer_norm = nn.LayerNorm(emb_dim)
+        self.layer_norm = nn.LayerNorm(cnn_out_dim)
         self.spatial_dropout = SpatialDropout(p=spatial_dropout)
 
         self.crf = CRF(self.tag_vocab_size, batch_first=True)
 
-        self.loss = torch.nn.CrossEntropyLoss(
-            ignore_index=self.padding_index,
-            reduction='none')
-
     def compute_outputs(self, sequences, true_lengths):
-        encoder_seq_convolved, encoder_seq_combined = self.encoder(sequences)
-        encoder_seq_combined = self.spatial_dropout(encoder_seq_combined)
-        encoder_seq_combined = self.layer_norm(encoder_seq_combined)
-        encoder_out = self.fc_1(encoder_seq_combined)
+        sequences = self.encoder(sequences)
+        sequences = self.spatial_dropout(sequences)
+        sequences = self.layer_norm(sequences)
+        encoder_out = self.fc_1(sequences)
         encoder_out = torch.relu(encoder_out)
         encoder_out = self.fc_2(encoder_out)
         encoder_out = torch.relu(encoder_out)
 
-        pad_mask = (sequences == self.padding_index).float()
-
-        encoder_out[:, :, self.padding_index] += pad_mask * 10000
+        # pad_mask = (sequences == self.padding_index).float()
+        #
+        # encoder_out[:, :, self.padding_index] += pad_mask * 10000
 
         return encoder_out
 
@@ -557,10 +563,6 @@ class TransformerCrfTagger(nn.Module):
         self.fc = nn.Linear(in_features=emb_dim,
                             out_features=tag_vocab_size)
 
-        self.loss = torch.nn.CrossEntropyLoss(
-            ignore_index=self.padding_index,
-            reduction='none')
-
         self.crf = CRF(self.tag_vocab_size, batch_first=True)
 
         self.init_weights()
@@ -587,17 +589,7 @@ class TransformerCrfTagger(nn.Module):
     def forward(self, sequences, labels, true_lengths):
         scores = self.compute_outputs(sequences, true_lengths)
 
-        scores = scores.view(-1, self.tag_vocab_size)
-        labels = labels.view(-1)
-
-        pad_mask = (sequences != self.padding_index).float()
-
-        loss = self.loss(scores, labels)
-        loss = loss.view(sequences.size(0), sequences.size(1))
-        loss *= pad_mask
-        loss = torch.sum(loss, axis=1)
-        loss /= true_lengths
-        loss = torch.mean(loss)
+        loss = -self.crf(scores, labels, reduction="mean")
 
         return loss
 

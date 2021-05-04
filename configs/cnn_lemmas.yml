@@ -3,20 +3,23 @@ flow_control:
   test_model: True
 
 train_params:
-  n_without_improvements: 4
+  n_without_improvements: 10
   early_stopping: True
   save_best: True
   save_last: False
   train_type: "lemmas"
   model_name: "CnnTagger"
   batch_size: 128
-  n_epochs: 10
+  n_epochs: 100
   grad_clip: 3.
   lr: 1e-03
 
 model_params:
-  emb_dim: 512
-  hidden_size: 1024
-  convolution_layers: 8
-  kernel_size: 3
+  cnn_out_dim: 256
+  num_filters: 512
+  emb_dim: 256
+  hidden_size: 2048
+  convolution_layers: 3
+  kernel_sizes: [3, 5, 7]
   spatial_dropout: 0.1
+  use_one_hot: False
