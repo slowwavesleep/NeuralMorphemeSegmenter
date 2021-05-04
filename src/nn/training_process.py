@@ -123,6 +123,8 @@ def training_cycle(experiment_id: str,
 
     best_accuracy = 0.
 
+    first_epoch_flag = True
+
     model_save_dir = f"./models/{model_name}/{experiment_id}"
     if (save_last or save_best) and not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -181,7 +183,14 @@ def training_cycle(experiment_id: str,
                 print(f"Current impatience: {impatience}")
                 print(f"Stopping at {n_without_improvements} impatience")
 
-        if early_stopping and impatience > n_without_improvements:
+            # this is to avoid crashing if model never went above zero accuracy
+            if save_best and first_epoch_flag:
+                print(f"Saving the current best state...")
+                torch.save(model.state_dict(), f"{model_save_dir}/best_model_state_dict.pth")
+                torch.save(optimizer.state_dict(), f"{model_save_dir}/best_optimizer_state_dict.pth")
+                first_epoch_flag = False
+
+        if early_stopping and impatience >= n_without_improvements:
             print(f"Early stopping because there was no improvement for {impatience} epochs")
             if write_log:
                 with open(f"{log_save_dir}/best_score.json", "w") as file:
