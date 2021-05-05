@@ -1,0 +1,6 @@
+./configs/transformer_lemmas.yml
+./configs/transformer_lemmas_low_resource.yml
+./configs/transformer_forms_shuffled.yml
+./configs/transformer_forms_shuffled_low_resource.yml
+./configs/transformer_forms.yml
+./configs/transformer_forms_low_resource.yml

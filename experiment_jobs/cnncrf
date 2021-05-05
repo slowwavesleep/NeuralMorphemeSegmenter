@@ -1,0 +1,6 @@
+./configs/cnncrf_lemmas.yml
+./configs/cnncrf_lemmas_low_resource.yml
+./configs/cnncrf_forms_shuffled.yml
+./configs/cnncrf_forms_shuffled_low_resource.yml
+./configs/cnncrf_forms.yml
+./configs/cnncrf_forms_low_resource.yml

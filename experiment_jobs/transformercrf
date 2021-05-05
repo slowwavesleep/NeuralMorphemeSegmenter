@@ -1,0 +1,6 @@
+./configs/transformercrf_lemmas.yml
+./configs/transformercrf_lemmas_low_resource.yml
+./configs/transformercrf_forms_shuffled.yml
+./configs/transformercrf_forms_shuffled_low_resource.yml
+./configs/transformercrf_forms.yml
+./configs/transformercrf_forms_low_resource.yml

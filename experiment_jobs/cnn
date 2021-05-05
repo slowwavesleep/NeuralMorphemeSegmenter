@@ -1,0 +1,6 @@
+./configs/cnn_lemmas.yml
+./configs/cnn_lemmas_low_resource.yml
+./configs/cnn_forms_shuffled.yml
+./configs/cnn_forms_shuffled_low_resource.yml
+./configs/cnn_forms.yml
+./configs/cnn_forms_low_resource.yml

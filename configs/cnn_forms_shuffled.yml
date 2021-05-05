@@ -8,16 +8,19 @@ train_params:
   early_stopping: True
   save_best: True
   save_last: False
-  train_type: "lemmas"
-  model_name: "TransformerCrfTagger"
+  train_type: "forms_shuffled"
+  model_name: "CnnTagger"
   batch_size: 128
   n_epochs: 100
   grad_clip: 3.
   lr: 1e-04
 
 model_params:
-  hidden_size: 1024
-  emb_dim: 512
-  dropout: 0.1
-  n_heads: 8
-  num_layers: 8
+  cnn_out_dim: 512
+  num_filters: 192
+  emb_dim: 256
+  hidden_size: 2048
+  convolution_layers: 4
+  kernel_sizes: [3, 3, 5, 5, 7, 7]
+  spatial_dropout: 0.3
+  use_one_hot: False
