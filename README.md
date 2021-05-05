@@ -10,7 +10,11 @@ python run_experiment.py  -p configs/lstmcrf_lemmas.yml
 ```
 bash run_experiment_job.sh "./experiment_jobs/lstm" 3 3
 ```
+## Generate predictions on test
 
+```
+python run_test_segmentation.py --model_name LstmTagger --train_type forms
+```
 ## Experiment info
 
 ### Number of runs for each model/data type combination
