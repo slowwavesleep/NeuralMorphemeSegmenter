@@ -84,30 +84,6 @@ def testing_cycle(experiment_id: str,
     return test_accuracy
 
 
-def write_predictions_to_file():
-    # TODO move write predictions here
-    pass
-    # TODO refactor to use batches
-    # predicted_segmentation = segmenter.tag_batch(original)
-    # print(predicted_segmentation)
-    # if write_predictions and write_path:
-    #     print("Writing results to file...")
-    #     with open(file_path, "w") as file:
-    #     #     for index, example, target, prediction in zip(indices, original, segmented, predicted_segmentation):
-    #         for index, example, target in zip(indices, original, segmented):
-    #             output = {"index": index,
-    #                       "original": example,
-    #                       "segmented": sequence2bmes(target),
-    #                       "predicted": segmenter.tag_example(example),
-    #                       "correct": sequence2bmes(target) == segmenter.tag_example(example)}
-    #
-    #             file.write(json.dumps(output, ensure_ascii=False) + "\n")
-    # elif write_predictions and not write_path:
-    #     print("No write path was specified!")
-    # else:
-    #     pass
-
-
 def evaluate_random_baseline(data_loader: DataLoader,
                              device: object,
                              metrics: dict,
