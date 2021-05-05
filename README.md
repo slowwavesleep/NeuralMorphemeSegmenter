@@ -42,9 +42,9 @@ in the ratio of correctly predicted examples for 10 epochs in a row.
 |Model|Lemmas|Lemmas Low Resource|Forms|Forms Low Resource|Forms Shuffled|Forms Shuffled Low Resource|
 |:---|:---:|:---:|:---:|:---:|:---:|---:|
 |Random|0.000069|-|0.000079|-|0.000178|-|
-|Baseline|0.0032|0.003|0.0018|0.0017|0|0|
-|Baseline-CRF|0|0|0|0|0|0|
-|LSTM|0|0|0|0|0|0|
+|Baseline|0.0032|0.003|0.0018|0.0017|0.0019|0.0019|
+|Baseline-CRF|0.18|0.1553|0|0|0|0|
+|LSTM|0.898|0.6312|0.7567|0.4962|0.9936|0.777|
 |LSTM-CRF|0|0|0|0|0|0|
 |CNN|0|0|0|0|0|0|
 |CNN-CRF|0|0|0|0|0|0|
