@@ -23,8 +23,8 @@ python run_test_segmentation.py --model_name LstmTagger --train_type forms
 |Model|Lemmas|Lemmas Low Resource|Forms|Forms Low Resource|Forms Shuffled|Forms Shuffled Low Resource|
 |:---|:---:|:---:|:---:|:---:|:---:|---:|
 |Random`*`|0|0|0|0|0|0|
-|Baseline|1|0|1|0|1|0|
-|Baseline-CRF|1|0|1|0|1|0|
+|Baseline|1|1|1|1|1|1|
+|Baseline-CRF|1|1|1|1|1|1|
 |LSTM|3|3|3|3|3|3|
 |LSTM-CRF|3|3|3|3|3|3|
 |CNN|3|3|3|3|3|3|
@@ -38,11 +38,11 @@ in the ratio of correctly predicted examples for 10 epochs in a row.
 `*` Random model is not trained
 
 ### Best scores on test for each model/data type combination
-
+#### Ratio of fully correct predictions
 |Model|Lemmas|Lemmas Low Resource|Forms|Forms Low Resource|Forms Shuffled|Forms Shuffled Low Resource|
 |:---|:---:|:---:|:---:|:---:|:---:|---:|
-|Random`*`|0|0|0|0|0|0|
-|Baseline|0|0|0|0|0|0|
+|Random|0.000069|-|0.000079|-|0.000178|-|
+|Baseline|0.0032|0.003|0.0018|0.0017|0|0|
 |Baseline-CRF|0|0|0|0|0|0|
 |LSTM|0|0|0|0|0|0|
 |LSTM-CRF|0|0|0|0|0|0|
