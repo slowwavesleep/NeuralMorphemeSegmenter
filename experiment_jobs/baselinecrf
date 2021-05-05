@@ -1,0 +1,6 @@
+./configs/baselinecrf_lemmas.yml
+./configs/baselinecrf_lemmas_low_resource.yml
+./configs/baselinecrf_forms.yml
+./configs/baselinecrf_forms_low_resource.yml
+./configs/baselinecrf_forms_shuffled.yml
+./configs/baselinecrf_forms_shuffled_low_resource.yml
