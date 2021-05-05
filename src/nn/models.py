@@ -518,9 +518,20 @@ class TransformerTagger(nn.Module):
     def forward(self, sequences, labels, true_lengths):
         scores = self.compute_outputs(sequences, true_lengths)
 
-        loss = -self.crf(scores, labels, reduction="mean")
+        scores = scores.view(-1, self.tag_vocab_size)
+        labels = labels.view(-1)
+
+        pad_mask = (sequences != self.padding_index).float()
+
+        loss = self.loss(scores, labels)
+        loss = loss.view(sequences.size(0), sequences.size(1))
+        loss *= pad_mask
+        loss = torch.sum(loss, axis=1)
+        loss /= true_lengths
+        loss = torch.mean(loss)
 
         return loss
+
 
     def predict(self, sequences: torch.tensor, true_lengths: Optional[torch.tensor] = None):
         if true_lengths is None:
