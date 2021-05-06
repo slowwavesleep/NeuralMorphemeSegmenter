@@ -47,7 +47,7 @@ in the ratio of correctly predicted examples for 10 epochs in a row.
 |LSTM|0.898|0.6312|0.7567|0.4962|0.9936|0.777|
 |LSTM-CRF|0.9059|0.6464|0|0|0|0|
 |CNN|0.7255|0.4168|0|0|0|0|
-|CNN-CRF|0|0|0|0|0|0|
+|CNN-CRF|0.4375|0|0|0|0|0|
 |Transformer|0|0|0|0|0|0|
 |Transformer-CRF|0|0|0|0|0|0|
 
