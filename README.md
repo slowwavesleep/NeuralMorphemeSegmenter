@@ -41,14 +41,14 @@ in the ratio of correctly predicted examples for 10 epochs in a row.
 #### Ratio of fully correct predictions
 |Model|Lemmas|Lemmas Low Resource|Forms|Forms Low Resource|Forms Shuffled|Forms Shuffled Low Resource|
 |:---|:---:|:---:|:---:|:---:|:---:|---:|
-|Random|0.000069|-|0.000079|-|0.000178|-|
+|Random|0.000069|—|0.000079|—|0.000178|—|
 |Baseline|0.0032|0.003|0.0018|0.0017|0.0019|0.0019|
 |Baseline-CRF|0.18|0.1553|0.1858|0.1652|0.1853|0.1907|
 |LSTM|0.898|0.6312|0.7567|0.4962|0.9936|0.777|
-|LSTM-CRF|0.9059|0.6464|0|0|0.9938|0.7874|
-|CNN|0.7285|0.4168|0|0|0.8816|0|
+|LSTM-CRF|0.9059|0.6464|0.7668|0.5047|0.9938|0.7874|
+|CNN|0.7285|0.4168|0|0|0.8816|0.5555|
 |CNN-CRF|0.4375|0.4062|0.377|0.2981|0.1741|0.4544|
-|Transformer|0|0|0|0|0|0|
+|Transformer|0.8722|0|0|0|0|0|
 |Transformer-CRF|0|0|0|0|0|0|
 
 _Low resource settings use the same valid/test data as their full counterparts_ 
