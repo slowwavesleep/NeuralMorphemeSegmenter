@@ -46,9 +46,9 @@ in the ratio of correctly predicted examples for 10 epochs in a row.
 |Baseline-CRF|0.18|0.1553|0.1858|0.1652|0.1853|0.1907|
 |LSTM|0.898|0.6312|0.7567|0.4962|0.9936|0.777|
 |LSTM-CRF|0.9059|0.6464|0.7668|0.5047|0.9938|0.7874|
-|CNN|0.7285|0.4168|0|0|0.8816|0.5555|
+|CNN|0.7285|0.4168|0.5588|0.3068|0.8816|0.5555|
 |CNN-CRF|0.4375|0.4062|0.377|0.2981|0.1741|0.4544|
-|Transformer|0.8722|0|0|0|0|0|
+|Transformer|0.8722|0.5558|0|0|0|0|
 |Transformer-CRF|0|0|0|0|0|0|
 
 _Low resource settings use the same valid/test data as their full counterparts_ 
