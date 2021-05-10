@@ -226,4 +226,4 @@ with open(write_path, "w") as file:
 
         file.write(json.dumps(data, ensure_ascii=False) + "\n")
 
-print(f"The result are located in {write_path}")
+print(f"The results are located in {write_path}")
