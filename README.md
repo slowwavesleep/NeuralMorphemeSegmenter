@@ -49,6 +49,6 @@ in the ratio of correctly predicted examples for 10 epochs in a row.
 |CNN|0.7285|0.4168|0.5588|0.3068|0.8816|0.5555|
 |CNN-CRF|0.4375|0.4062|0.377|0.2981|0.1741|0.4544|
 |Transformer|0.8722|0.5558|0.7267|0.4421|0.9965|0.7475|
-|Transformer-CRF|0.88|0.57|0.75|0|0.9969|0.7539|
+|Transformer-CRF|0.88|0.57|0.75|0.4546|0.9969|0.7539|
 
 _Low resource settings use the same valid/test data as their full counterparts_ 

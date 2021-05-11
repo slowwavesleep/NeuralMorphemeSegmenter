@@ -1,3 +1,4 @@
 /models/
 /logs/
 /data/predictions/
+/error_analysis/errors.jsonl
