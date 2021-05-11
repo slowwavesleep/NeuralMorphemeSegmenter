@@ -206,8 +206,7 @@ with open(write_path, "w") as file:
                                                                                   segmented_words,
                                                                                   predictions,
                                                                                   true_lengths):
-        # TODO fix this properly
-        original_word = original_tokenizer.decode(original_word)[:true_length].replace("<UNK>", "ё")
+        original_word = original_tokenizer.decode(original_word)[:true_length]
         target_bmes = bmes_tokenizer.decode(target_segmentation)[:true_length]
         predicted_bmes = bmes_tokenizer.decode(prediction)[:true_length]
 
