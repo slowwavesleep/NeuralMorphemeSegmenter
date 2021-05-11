@@ -2,3 +2,4 @@
 /logs/
 /data/predictions/
 /error_analysis/errors.jsonl
+/error_analysis/.ipynb_checkpoints/
